@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="{{ page.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}ConnectIO</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}">ConnectIO <small>26.09.23</small></a>
+    <nav>
+      {% if page.lang == 'zh' %}
+      <a href="{{ '/zh/' | relative_url }}">文档</a><a href="{{ '/zh/pipeline/' | relative_url }}">流程</a><a href="{{ '/zh/segmentation/' | relative_url }}">分割</a><a href="{{ '/zh/slurm/' | relative_url }}">Slurm</a><a href="{{ '/en/' | relative_url }}">English</a>
+      {% else %}
+      <a href="{{ '/en/' | relative_url }}">Docs</a><a href="{{ '/en/pipeline/' | relative_url }}">Pipeline</a><a href="{{ '/en/segmentation/' | relative_url }}">Segmentation</a><a href="{{ '/en/slurm/' | relative_url }}">Slurm</a><a href="{{ '/zh/' | relative_url }}">中文</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>{{ content }}</main>
+  <footer>ConnectIO · Documentation version 26.09.23</footer>
+</body>
+</html>

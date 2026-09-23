@@ -1,0 +1,8 @@
+title: ConnectIO
+description: Slurm-first connectomics data processing and segmentation
+url: "https://Happ1Hua.github.io"
+baseurl: "/ConnectIO-docs"
+markdown: kramdown
+highlighter: rouge
+exclude:
+  - README.md
