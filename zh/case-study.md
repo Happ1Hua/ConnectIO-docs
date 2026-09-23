@@ -7,7 +7,7 @@ permalink: /zh/case-study/
 
 # digspider：raw 到 segmentation 实测
 
-仓库在 `test_from_raw_to_seg/` 保留本次可复现记录。全流程采用 **XYZ 8×8×8 nm**，转换、预处理和对齐使用 `data_format_convert`，分割使用 `lsd_pytorch`。每个阶段分别保存 scripts、configs、data、reports、logs 和审查记录；根目录 `raw/` 保存共享 raw，避免各阶段重复复制 Zarr。
+仓库在 `tests/workspaces/raw_to_seg/` 保留本次可复现记录。全流程采用 **XYZ 8×8×8 nm**，转换、预处理和对齐使用 `data_format_convert`，分割使用 `lsd_pytorch`。每个阶段分别保存 scripts、configs、data、reports、logs 和审查记录；工作区内 `raw/` 保存共享 raw，避免各阶段重复复制 Zarr。
 
 ## 转换、预处理和对齐
 

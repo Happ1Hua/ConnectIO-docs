@@ -7,7 +7,7 @@ permalink: /en/case-study/
 
 # digspider: validated raw-to-segmentation case study
 
-This repository retains the reproducible run under `test_from_raw_to_seg/`. It used **8×8×8 nm XYZ** voxels, `data_format_convert` for conversion/preprocessing/alignment, and `lsd_pytorch` for segmentation. Each stage had its own scripts, configs, data, reports, logs, and review record. A shared raw volume under `raw/` avoided duplicate Zarr copies.
+This repository retains the reproducible run under `tests/workspaces/raw_to_seg/`. It used **8×8×8 nm XYZ** voxels, `data_format_convert` for conversion/preprocessing/alignment, and `lsd_pytorch` for segmentation. Each stage had its own scripts, configs, data, reports, logs, and review record. A shared raw volume under `raw/` avoided duplicate Zarr copies.
 
 ## Conversion, preprocessing, and alignment
 
