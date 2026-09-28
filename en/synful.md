@@ -7,7 +7,7 @@ permalink: /en/synful/
 
 # Synful PyTorch: synapse partner detection
 
-ConnectIO includes the PyTorch Synful pipeline as `connectio.segmentation.synful_pytorch`. It predicts a postsynaptic indicator and a partner displacement vector, extracts candidate pre/post pairs, and exports CSV and WEBKNOSSOS NML skeletons. The package also provides training, checkpoint validation, TensorFlow NPZ weight conversion, optional segmentation filtering, and blockwise NMS utilities.
+ConnectIO provides the PyTorch Synful pipeline as `connectio.synapse_detection.synful_pytorch`, under its own `synapse_detection` package rather than `segmentation`. It predicts a postsynaptic indicator and a partner displacement vector, extracts candidate pre/post pairs, and exports CSV and WEBKNOSSOS NML skeletons. The package also provides training, checkpoint validation, TensorFlow NPZ weight conversion, optional segmentation filtering, and blockwise NMS utilities.
 
 This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentation/" | relative_url }}). The two workflows may share the same raw and neuron segmentation volumes, but Synful uses its own configuration, checkpoints, and output directory. ConnectIO does not include the original Synful experiment data or trained weights.
 
@@ -24,14 +24,14 @@ connectio-synful --help
 
 Use a Python environment with a PyTorch build appropriate for your accelerator and driver. The `synful-pytorch` extra installs the package dependencies; it does not select a CUDA build or submit a GPU job. Training, full-volume inference, and GPU validation should run in an allocated compute session. A CPU run is useful for a small test ROI but can be slow for production volumes.
 
-The source package can also be invoked as `python -m connectio.segmentation.synful_pytorch` if a console script is unavailable.
+The source package can also be invoked as `python -m connectio.synapse_detection.synful_pytorch` if a console script is unavailable. Existing scripts that imported `connectio.segmentation.synful_pytorch` must update that import path; the `connectio-synful` command name is unchanged.
 
 ## 2. Prepare the data and configuration
 
-Copy the [packaged example JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/configs/training/synful.example.json):
+Copy the [packaged example JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json):
 
 ```bash
-cp connectio/segmentation/configs/training/synful.example.json my-synful.json
+cp connectio/synapse_detection/configs/synful.example.json my-synful.json
 ```
 
 The example contains placeholder paths and ROIs. Change them before running `inspect` or training. Relative data and output paths are resolved from the **current working directory** by the current Synful implementation; an absolute path is safer when launching from Slurm scripts. The example's `synful-results/` directory and `my-synful.json` are ignored by Git.
@@ -142,7 +142,7 @@ Synful's internal order is **ZYX in nanometres**. Candidate CSV columns are expl
 For standalone CSV-to-NML conversion, the package also exposes:
 
 ```bash
-python -m connectio.segmentation.synful_pytorch.io.nml \
+python -m connectio.synapse_detection.synful_pytorch.io.nml \
   --csv synful-results/inference/03.synapses.csv \
   --output synful-results/inference/review.nml \
   --dataset YOUR_WEBKNOSSOS_DATASET \
@@ -175,4 +175,4 @@ Legacy TensorFlow weights exported to NPZ can be converted with `connectio-synfu
 | NML “Off-grid/negative/nonfinite coordinate” | Check raw voxel size, physical origin, axis mapping, and candidate coordinates. |
 | NML appears rotated or displaced | Check `export.axis_order`, `export.origin_nm_xyz`, raw `resolution`/`offset`, and the WEBKNOSSOS dataset metadata together. |
 
-The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/configs/training/synful.example.json) track the exact branch used by this page.
+The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json) track the exact branch used by this page.

@@ -7,7 +7,7 @@ permalink: /zh/synful/
 
 # Synful PyTorch：突触检测与 pre/post 配对
 
-ConnectIO 在 `connectio.segmentation.synful_pytorch` 中集成了 Synful 的 PyTorch 实现。模型预测突触位置概率及指向配对端点的位移向量；后续流程提取 pre/post 候选，并导出 CSV 和 WEBKNOSSOS NML 骨架。包中还包含训练、验证、TensorFlow NPZ 权重转换、可选的分割过滤及分块 NMS 工具。
+ConnectIO 将 Synful 的 PyTorch 实现放在独立的 `connectio.synapse_detection.synful_pytorch` 包中，而不是 `segmentation` 目录。模型预测突触位置概率及指向配对端点的位移向量；后续流程提取 pre/post 候选，并导出 CSV 和 WEBKNOSSOS NML 骨架。包中还包含训练、验证、TensorFlow NPZ 权重转换、可选的分割过滤及分块 NMS 工具。
 
 Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。ConnectIO 不附带原 Synful 项目的实验数据或训练权重。
 
@@ -24,14 +24,14 @@ connectio-synful --help
 
 请选择与显卡和驱动兼容的 PyTorch 环境。`synful-pytorch` extra 安装 Python 依赖，但不替用户选择 CUDA 构建，也不自动申请 GPU 作业。正式训练、全体积推理和 GPU 验证应在已分配资源的计算节点执行；CPU 更适合小 ROI 流程检查。
 
-如果命令行脚本不可用，也可运行 `python -m connectio.segmentation.synful_pytorch`。
+如果命令行脚本不可用，也可运行 `python -m connectio.synapse_detection.synful_pytorch`。原先导入 `connectio.segmentation.synful_pytorch` 的脚本需要改为新路径；`connectio-synful` 命令名保持不变。
 
 ## 2. 准备输入和配置
 
-复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/configs/training/synful.example.json)：
+复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json)：
 
 ```bash
-cp connectio/segmentation/configs/training/synful.example.json my-synful.json
+cp connectio/synapse_detection/configs/synful.example.json my-synful.json
 ```
 
 示例路径和 ROI 都是占位值，执行 `inspect` 前必须修改。当前实现以**命令执行时的工作目录**解析相对输入和输出路径；Slurm 脚本从不同目录启动时，绝对路径更稳妥。示例使用的 `my-synful.json` 和 `synful-results/` 已加入 `.gitignore`。
@@ -142,7 +142,7 @@ Synful 内部使用 **ZYX 顺序的纳米坐标**。候选 CSV 显式包含 `pre
 也可以单独把 CSV 转换为 NML：
 
 ```bash
-python -m connectio.segmentation.synful_pytorch.io.nml \
+python -m connectio.synapse_detection.synful_pytorch.io.nml \
   --csv synful-results/inference/03.synapses.csv \
   --output synful-results/inference/review.nml \
   --dataset YOUR_WEBKNOSSOS_DATASET \
@@ -175,4 +175,4 @@ connectio-synful validate --config my-synful.json \
 | NML “Off-grid/negative/nonfinite coordinate” | 核对 raw 体素大小、原点、轴映射及候选坐标。 |
 | NML 在查看器中旋转或偏移 | 同时核对 `export.axis_order`、`export.origin_nm_xyz`、raw 的 `resolution`/`offset` 和 WEBKNOSSOS 数据集元数据。 |
 
-[源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/segmentation/configs/training/synful.example.json)对应本页介绍的分支。
+[源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json)对应本页介绍的分支。
