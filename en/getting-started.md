@@ -29,6 +29,8 @@ pip install -e . --no-deps
 
 The segmentation extra is also available as `pip install -e ".[segmentation]"`. The legacy Funke post-processing stack (`lsds 0.1`, `waterz 0.9.6`, `daisy 0.2`, `funlib.segment 0.1`, `funlib.persistence 0.1.0`) must be installed in the segmentation environment. On the current cluster, `connectio/segmentation/scripts/activate_env.sh` exposes the verified legacy packages.
 
+Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for the branch to install, input requirements, configuration, commands, and coordinate checks. Synful compute commands run in the current process, so allocate compute resources before training or full-volume inference.
+
 ## First stage submission
 
 Copy a JSON from `connectio/segmentation/configs/stages/`, edit its data paths, then validate the plan:

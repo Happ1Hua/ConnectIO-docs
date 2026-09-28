@@ -27,6 +27,8 @@ pip install -e . --no-deps
 
 也可使用 `pip install -e ".[segmentation]"`。Funke 后处理还需要旧版 `lsds 0.1`、`waterz 0.9.6`、`daisy 0.2`、`funlib.segment 0.1` 和 `funlib.persistence 0.1.0`。当前集群可用 `connectio/segmentation/scripts/activate_env.sh` 加载已验证的旧版依赖。
 
+Synful 突触配对检测使用独立的 `synful-pytorch` extra 和 `connectio-synful` 命令。所需分支、输入格式、配置、命令与坐标检查见[详细的 Synful PyTorch 指南]({{ "/zh/synful/" | relative_url }})。Synful 计算命令在当前进程运行；正式训练或全体积推理前请先申请计算资源。
+
 ## 首次提交
 
 从 `connectio/segmentation/configs/stages/` 复制 JSON，修改数据路径并先检查提交计划：

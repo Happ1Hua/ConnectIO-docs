@@ -7,13 +7,14 @@ permalink: /zh/
 
 # ConnectIO
 
-ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割和可视化流程。**26.09.23** 版本将计算入口统一为 Slurm 优先执行，并将分割流程拆成可单独提交、单独审查的阶段。
+ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.09.23** 版本将 LSD 分割流程拆成可单独提交、单独审查的阶段。
 
 ## 文档
 
 - [安装与开始]({{ "/zh/getting-started/" | relative_url }})：环境、安装和首次提交。
 - [raw 到 segmentation 流程]({{ "/zh/pipeline/" | relative_url }})：阶段边界、人工审查和断点启动。
 - [分割]({{ "/zh/segmentation/" | relative_url }})：LSD/ACRLSD、Funke 后处理、配置、MongoDB 状态和模型。
+- [Synful PyTorch]({{ "/zh/synful/" | relative_url }})：详细介绍安装、输入与坐标、训练、推理、提取、导出、验证和排错。
 - [Slurm 执行]({{ "/zh/slurm/" | relative_url }})：默认资源、覆盖参数、作业对象和集群规则。
 - [模块与教程]({{ "/zh/modules/" | relative_url }})：格式、预处理、对齐、可视化和示例。
 - [格式与体数据操作]({{ "/zh/formats/" | relative_url }})：支持的互转格式、内存模式和处理操作。
