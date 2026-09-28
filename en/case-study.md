@@ -7,7 +7,7 @@ permalink: /en/case-study/
 
 # digspider: validated raw-to-segmentation case study
 
-This repository retains the reproducible run under `tests/workspaces/raw_to_seg/`. It used **8×8×8 nm XYZ** voxels, `data_format_convert` for conversion/preprocessing/alignment, and `lsd_pytorch` for segmentation. Each stage had its own scripts, configs, data, reports, logs, and review record. A shared raw volume under `raw/` avoided duplicate Zarr copies.
+The local run used `tests/workspaces/raw_to_seg/`, **8×8×8 nm XYZ** voxels, `data_format_convert` for conversion/preprocessing/alignment, and `lsd_pytorch` for segmentation. Each stage had its own scripts, configs, data, reports, logs, and review record. A shared raw volume under `raw/` avoided duplicate Zarr copies. `tests/workspaces/` is Git-ignored: these run artifacts are **not guaranteed to exist in a public checkout**. This page records the verified findings, not a downloadable data release.
 
 ## Conversion, preprocessing, and alignment
 
@@ -27,4 +27,12 @@ The fix separated target semantics from supervision validity, checked both endpo
 
 New affinity inference used the ground-truth source raw and the corrected checkpoints. The cropped affinities aligned with raw under Neuroglancer review. Watershed fragments, agglomeration, threshold LUTs, and final relabeling were then run and reviewed as separate results. The investigation established that earlier fragment misalignment came from the affected affinity/watershed path; choosing a local-minimum watershed polarity was useful for diagnosis but was not retained as a substitute for corrected affinity training.
 
-The case-study directories remain execution evidence. The canonical reusable instructions now live in this site, while reports and JSON review records preserve exact job IDs, hashes, parameters, and findings.
+## How to apply the case study
+
+The run illustrates a sequence of acceptance decisions, not a fixed set of parameters for every specimen. Preserve the original TIFF stack, produce a separate converted Zarr, and compare source pixels to conversion output before intensity processing. Keep normalization and CLAHE outputs separate so the effect of each operation can be inspected. Alignment produces an aligned TIFF stack and report; convert that accepted stack to Zarr before inference. Carry `resolution` and `offset` into all downstream datasets and review XY, XZ, and YZ views after each scientific stage.
+
+For training, check not only loss curves but also whether positive, negative, and ignored affinity edges are represented as intended. Re-run inference and every dependent post-processing stage after a supervision change. For final labels, compare multiple thresholds on representative regions and report both merge and split errors. The [LSD operator guide]({{ "/en/lsd-guide/" | relative_url }}) gives the commands and state requirements for a new run.
+
+## Evidence and reproducibility limits
+
+When the local workspace is available, its reports and JSON reviews retain the exact job IDs, hashes, parameters, and findings. Those large data products and local records are not included in the public repository because `tests/workspaces/` is ignored. A reader can reproduce the *method* from the published configs and documentation, but not the specific quantitative result without the source images, ground truth, checkpoints, and local run records. The published values above describe this one validated run; they should not be generalized to other volumes.

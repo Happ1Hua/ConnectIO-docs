@@ -34,7 +34,62 @@ from connectio.execution import submit_function
 
 job = submit_function(
     "connectio.processing.crop", "crop_zarr",
-    kwargs={"input_zarr_path": "/data/in.zarr", "output_zarr_path": "/data/out.zarr"},
+    kwargs={
+        "input_zarr_path": "in.zarr",
+        "output_zarr_path": "out.zarr",
+        "dataset_path": "volumes/raw",
+        "crop_bbox_xyz": ((0, 256), (0, 256), (0, 64)),
+    },
     resource="cpu",
 )
 ```
+
+## 可逐步审查的 TIFF 流程
+
+TIFF 预处理 CLI 默认提交 CPU 作业。每次执行一条命令，等待作业完成并检查结果，再将其输出作为下一步输入：
+
+```bash
+connectio-tiff-check --input source_tiffs --output qc
+connectio-tiff-normalize --input source_tiffs --output normalized \
+  --method robust-z-no-clip --z-window 21
+connectio-tiff-clahe pilot --input normalized/tiffs --output clahe_pilot \
+  --candidates 1.5:16,2.0:16,2.0:30
+connectio-tiff-clahe apply --input normalized/tiffs --output clahe \
+  --clip-limit 1.5 --grid-size 16
+```
+
+第一步生成 `summary.json`、`per_slice_qc.csv`、Z 方向亮度趋势和代表层拼图。归一化输出在 `normalized/tiffs/`，另有逐层 gain/offset 与处理前后 QC。`robust-z-no-clip` 力求避免越界像素；`mean-std-clip` 允许裁剪并统计数量。CLAHE `pilot` 只生成参数比较图，不处理全栈；`apply` 才把选定参数应用于全栈，在 `clahe/tiffs/` 写入图片和 QC。上面的路径和数值只是示例，应根据 pilot 图与原图审查决定参数。
+
+接受预处理结果后再对齐：
+
+```bash
+connectio-align --input clahe/tiffs --output aligned --method phase
+```
+
+`phase` 估计平移；`ecc` 和 `orb` 能估计更一般的变换，结果不被接受时可回退到 phase；`--no-fallback` 可关闭回退。`aligned/alignment_report.json` 记录逐对、累计矩阵和配准指标。每张原图仅插值一次。转换成 Zarr 前检查漂移、无效边缘和 XZ/YZ 连续性。[digspider 案例]({{ "/zh/case-study/" | relative_url }})包含一次真实审查记录。
+
+## 体数据与标注工具
+
+`connectio.conversion` 包含 TIFF、PNG、TXM、HDF5、WKW、hyperstack 和 precomputed 转换。`connectio.processing` 提供 `crop_zarr`、`rotate_zarr`、`resample_zarr`、`downsample_zarr`、`upsample_zarr` 和 `merge_nml_files`。这些函数的轴顺序和覆盖行为需按[格式与体数据操作]({{ "/zh/formats/" | relative_url }})核对。Python 工作流还可使用 `connectio.alignment.emalignkit` 的 `register_pair`、`align_folder_pairwise`。
+
+两个已提交作业写入同一 Zarr 时，应显式设置依赖或等待前一作业完成。提交函数会立即返回，输出此时尚未就绪。建议同一运行的路径、配置、报告和审查记录放在一起；对比处理方案时使用独立输出路径。
+
+## 查看器使用
+
+`tutorials/neuroglancer_view_zarr.py`、`neuroglancer_view_hdf5.py`、`neuroglancer_view_synapse.py` 和 `neuroglancer_view_precomputed_http.py` 配置交互式 Slurm 服务。先修改数据路径、dataset、站点登录地址、本机/远程端口及资源，再在交互终端启动脚本。启动器打印作业号并持续跟随日志，同时提供 SSH tunnel 命令；在自己的电脑建立隧道后打开本地 URL。终端中按 Ctrl+C 会取消其申请的查看器作业。
+
+大型 Zarr 默认使用惰性读取，只有数据能放进申请的内存时才考虑整体载入。channel-first affinity 需要能选择通道的图层或 shader；raw 灰度图层不会自动正确显示所有通道。接受坐标映射前，应检查已知地标及三个正交截面。
+
+## 按任务查找示例
+
+| 任务 | 教程文件 |
+|---|---|
+| TIFF/PNG/TXM 与 hyperstack 导入 | `tiff_to_zarr.py`、`png_stack_to_zarr.py`、`txm_to_zarr.py` |
+| HDF5/WKW 互转 | `hdf5_to_zarr.py`、`zarr_to_hdf5.py`、`wkw_to_zarr.py`、`zarr_to_wkw.py` |
+| Neuroglancer precomputed | `precomputed_to_zarr.py`、`neuroglancer_generate_precompute_format.py` |
+| 裁剪、旋转、重采样 | `crop_zarr.py`、`rotate_zarr.py`、`resample_zarr.py` |
+| TIFF QC 与对齐 | `tiff_preprocessing.py`、`align_tiffs.py` |
+| LSD 推理与查看 | `lsd_inference.py`、`neuroglancer_view_zarr.py` |
+| Skeleton 标注 | `merge_nmls.py` |
+
+部分示例含站点专用数据路径和资源值，应先改成自己的工作区，再检查提交记录和输出。[Slurm 执行]({{ "/zh/slurm/" | relative_url }})解释通用提交选项。

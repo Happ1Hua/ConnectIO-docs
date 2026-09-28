@@ -7,7 +7,7 @@ permalink: /zh/case-study/
 
 # digspider：raw 到 segmentation 实测
 
-仓库在 `tests/workspaces/raw_to_seg/` 保留本次可复现记录。全流程采用 **XYZ 8×8×8 nm**，转换、预处理和对齐使用 `data_format_convert`，分割使用 `lsd_pytorch`。每个阶段分别保存 scripts、configs、data、reports、logs 和审查记录；工作区内 `raw/` 保存共享 raw，避免各阶段重复复制 Zarr。
+本地运行使用 `tests/workspaces/raw_to_seg/`，全流程采用 **XYZ 8×8×8 nm**，转换、预处理和对齐使用 `data_format_convert`，分割使用 `lsd_pytorch`。每个阶段分别保存 scripts、configs、data、reports、logs 和审查记录；工作区内 `raw/` 保存共享 raw，避免各阶段重复复制 Zarr。`tests/workspaces/` 被 Git 忽略，因此**公开仓库不保证包含这些运行产物**。本页记录经过核验的结论，并非数据下载页。
 
 ## 转换、预处理和对齐
 
@@ -27,4 +27,12 @@ permalink: /zh/case-study/
 
 新 checkpoint 对 ground-truth source raw 重新推理，裁剪后的 affinity 在 Neuroglancer 中与 raw 贴合。之后分别运行并检查 watershed fragments、agglomeration、threshold LUT 和最终 relabel。调查说明早期 fragments 错位源于异常 affinity/watershed 路径；`local_min_candidate` 仅用于诊断，没有作为替代监督修复的生产方案。
 
-案例目录保留实际执行证据；本网站作为可复用说明，reports 和 JSON review 继续保存确切 job ID、hash、参数与审查结论。
+## 如何借鉴本案例
+
+本案例展示的是逐阶段验收方法，不是所有样本都通用的一组参数。保留原始 TIFF，另建转换后的 Zarr，强度处理前先逐体素核对转换结果。将归一化和 CLAHE 的输出分开保存，才能独立检查每步影响。对齐先产生 TIFF 和报告；确认后再将对齐 TIFF 转为推理所需 Zarr。下游始终保留 `resolution`、`offset`，每个科学阶段都在 XY、XZ、YZ 中审查。
+
+训练时不仅看 loss，还应核对 affinity 正边、负边和忽略边的目标与权重。修改监督后，需重新推理并运行所有依赖它的后处理阶段。最终标签应在有代表性的区域比较多个阈值，并同时报告错误合并与错误拆分。[LSD 操作指南]({{ "/zh/lsd-guide/" | relative_url }})提供新运行所需命令与状态约束。
+
+## 证据与复现边界
+
+如果本地工作区仍在，reports 和 JSON 审查记录保存确切 job ID、hash、参数与结论。但这些大型数据和本地记录不在公开仓库中，因为 `tests/workspaces/` 被忽略。读者可以依据公开配置与文档复现*方法*；若缺少原始图像、GT、权重和本地运行记录，则不能直接复现本次的具体定量结果。以上数值只描述这一例，不应推广到其他体数据。

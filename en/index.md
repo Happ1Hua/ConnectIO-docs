@@ -14,6 +14,7 @@ ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, 
 - [Install and start]({{ "/en/getting-started/" | relative_url }}): environments, installation, and first submissions.
 - [Raw-to-segmentation pipeline]({{ "/en/pipeline/" | relative_url }}): stage boundaries, review gates, and restart behavior.
 - [Segmentation]({{ "/en/segmentation/" | relative_url }}): LSD/ACRLSD inference, Funke post-processing, configs, MongoDB state, and models.
+- [LSD and ACRLSD operator guide]({{ "/en/lsd-guide/" | relative_url }}): detailed inputs, stage commands, review checks, graph-state continuity, and recovery.
 - [Synful PyTorch]({{ "/en/synful/" | relative_url }}): detailed setup, data and coordinate conventions, training, inference, extraction, export, validation, and troubleshooting.
 - [Slurm execution]({{ "/en/slurm/" | relative_url }}): defaults, overrides, job handles, and cluster rules.
 - [Modules and tutorials]({{ "/en/modules/" | relative_url }}): conversion, preprocessing, alignment, formats, visualization, and examples.
