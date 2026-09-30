@@ -57,7 +57,7 @@ Use one shared raw Zarr and refer to it from all configs. Relative data paths ar
 
 Use `precomputed` when the source is a local Neuroglancer precomputed directory. It writes a Zarr dataset such as `volumes/raw`; choose `mode: "large"` for a very wide or large volume and check `resolution` before conversion. Use `alignment` when the source is an image stack that needs pairwise registration. It writes aligned TIFF files and an alignment report, **not** a raw Zarr. Convert the accepted aligned TIFF stack to Zarr with `tiff_stack_to_zarr` before LSD inference. If you already have an aligned Zarr raw volume with correct physical metadata, begin at affinity.
 
-The stage templates are [in the ConnectIO branch](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration/connectio/segmentation/configs/stages). Copy them into a run directory and replace every example path. Stage JSON path fields are resolved from the JSON file's directory. Native Funke values, such as `block_size` and `context`, retain the units expected by Funke; they are not automatically converted from voxel counts.
+The stage templates are [in ConnectIO main](https://github.com/Happ1Hua/ConnectIO/tree/main/connectio/segmentation/configs/stages). Copy them into a run directory and replace every example path. Stage JSON path fields are resolved from the JSON file's directory. Native Funke values, such as `block_size` and `context`, retain the units expected by Funke; they are not automatically converted from voxel counts.
 
 ## Inputs, outputs, and review decisions
 

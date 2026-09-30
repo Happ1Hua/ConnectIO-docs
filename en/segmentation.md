@@ -47,7 +47,44 @@ The corrected affinity supervision treats a target as positive only when both vo
 
 Inference writes channel-first `uint8` predictions and copies raw `resolution` and `offset`. The local JSON block tracker permits restart when `mongo_required=false`. The affinity stage disables MongoDB for inference and runs LSD before ACRLSD.
 
-Watershed extracts fragments from the affinity convention produced by the corrected model. Agglomeration writes region-adjacency graph edges and merge scores. LUT generation scans thresholds; final segmentation relabels fragments using one selected threshold. `affinities`, `fragments`, and raw must be spatially compared before proceeding—changing affinity polarity inside watershed is a diagnostic workaround, not a replacement for correct supervision.
+Watershed extracts fragments from the affinity convention produced by the corrected model. Agglomeration writes region-adjacency graph edges and merge scores. LUT generation scans thresholds. The final `segmentation` stage now supports two user-selected outputs through `output_type`:
+
+- `segmentation` (the backward-compatible default) materializes labels for one `threshold` and creates a WEBKNOSSOS Zarr3 dataset with `datasource-properties.json`.
+- `agglomerate` creates a WEBKNOSSOS Zarr v3 attachment for every requested threshold and a matching dense-ID base-fragments dataset. Use `thresholds`, or `thresholds_minmax` with `thresholds_step`, and set `agglomerate_file`, `out_file`, and `out_dataset`. The stage reuses the LUT files and the same persistent MongoDB RAG as the preceding stages.
+
+Each directory below `agglomerate_file` is one `AgglomerateViewArtifact`. The stage also creates `webknossos_dataset_path` (by default a sibling `webknossos_dataset` directory) with a dense-ID Zarr3 `segmentation/1` layer, its `segmentation/agglomerates/` attachments, and a root `datasource-properties.json`. Copy this complete dataset directory to WEBKNOSSOS. The Zarr2 volume at `out_file/out_dataset` remains an intermediate output; sparse original fragment IDs cannot index the mappings.
+
+WEBKNOSSOS can use WKW raw and Zarr3 segmentation layers in the same dataset. To add a Zarr2 raw layer instead, call `zarr2_to_zarr3` with `category="color"`; it supports selected source arrays, segmentation layers, and Slurm submission, and updates `datasource-properties.json` on completion.
+
+To add the output to an existing WKW raw dataset, copy its `segmentation/` subdirectory and append the generated segmentation entry to the existing `dataLayers`. Keep the existing raw entry, `scale`, and other metadata rather than replacing the whole datasource file. Both layers must share the same voxel size and coordinate frame.
+
+A dataset with only `segmentation/1` can ask you to zoom in when an agglomerate ID mapping is active. After publishing, run the separate `webknossos-downsample` stage to add segmentation magnifications 2, 4, 8, 16, and 32, matching the raw layer. See `07_webknossos_downsample.example.json`:
+
+```bash
+connectio-segmentation-stage webknossos-downsample \
+  connectio/segmentation/configs/stages/07_webknossos_downsample.example.json
+```
+
+The stage invokes the official WEBKNOSSOS `downsample` CLI for only the selected layer. Segmentation labels use its default mode filter. Connectio restores agglomerate attachment references after older CLI versions rewrite the metadata. `zarr2_to_zarr3` also accepts `downsample_coarsest_mag=32` to generate coarser mags after conversion. Run large datasets through Slurm and ensure the datastore runtime user can read the new magnification directories.
+
+Slurm outputs may be owner-only (directories `700`, files `600`). After placing a dataset in a self-hosted WEBKNOSSOS `binaryData/<organization>/<dataset>`, ensure the datastore's actual runtime user can traverse every directory and read `datasource-properties.json`, Zarr metadata, and chunks; a shared group on the host does not guarantee that the container user belongs to it. Otherwise the web UI may show “Not imported yet”. Use “Scan disk for new datasets” in the dataset dashboard, or allow up to about 10 minutes for automatic discovery.
+
+If “Not imported yet” persists after a scan, check from inside the datastore container that `datasource-properties.json` exists and is readable at the mounted dataset path, then inspect datastore import logs. This status alone does not establish a Zarr volume or agglomerate format error: in WEBKNOSSOS 26.05.0, the scanner emits it when it cannot see the datasource file, while JSON validation failures have a different error status.
+
+```text
+webknossos_dataset/
+├── datasource-properties.json
+├── zarr.json
+└── segmentation/
+    ├── zarr.json
+    ├── 1/                         # dense fragments at global voxel coordinates, Zarr3
+    └── agglomerates/
+        ├── agglomerate_view_000/
+        ├── agglomerate_view_002/
+        └── ...
+```
+
+`affinities`, `fragments`, and raw must be spatially compared before proceeding—changing affinity polarity inside watershed is a diagnostic workaround, not a replacement for correct supervision.
 
 The legacy `00.submit_affinity.sh` and `01.submit_crop_postprocess.sh` remain for compatibility, but the latter chains downstream steps and is not the preferred review-gated interface.
 

@@ -15,7 +15,7 @@ Zarr is the primary volume format. TIFF/PNG/TXM ingestion writes XYZ arrays; spe
 | PNG | slice stack → Zarr | `png_stack_to_zarr` |
 | ZEISS TXM | TXM → Zarr | `txm_to_zarr` |
 | HDF5 | HDF5 ↔ Zarr | `hdf5_to_zarr`, `zarr_raw_to_hdf5_xyz` |
-| WebKnossos | WKW/ZIP ↔ Zarr | `wkw_to_zarr`, `zarr_to_wkw` |
+| WebKnossos | WKW/ZIP ↔ Zarr; Zarr2 → ready-to-open Zarr3 dataset; official CLI downsampling | `wkw_to_zarr`, `zarr_to_wkw`, `zarr2_to_zarr3`, `downsample_webknossos_layer` |
 | Neuroglancer | precomputed ↔ Zarr | `precomputed_to_zarr`, `zarr_to_precomputed` |
 
 ```python
@@ -30,6 +30,10 @@ job = tiff_stack_to_zarr(
 ```
 
 PNG and TIFF folder readers currently sort by filename. Zero-pad numeric slice names (for example `slice_0002.tif`, `slice_0010.tif`) or verify the resulting order; names such as `slice_10` sort before `slice_2`. Multi-channel PNG/hyperstack input writes separate layer datasets. TXM conversion supports process-based parallel decoding. WKW export is suitable for WebKnossos segmentation layers. The `zarr_raw_to_hdf5_xyz` helper specifically transposes a ZYX Zarr input into XYZ HDF5 for a different pipeline.
+
+`zarr2_to_zarr3` converts one selected 3D `source_dataset` per call: use `category="color"` for raw or `category="segmentation"` for labels. Repeated calls to the same `output_dataset_path` add layers and update its root `datasource-properties.json`. Set `axes` to specify the source array order; provide `voxel_size` and `offset` when the source lacks `resolution` and `offset` attributes. It submits through Slurm by default; see `tutorials/zarr2_to_zarr3.py`.
+
+For multiple magnifications, set `downsample_coarsest_mag=32` during conversion, or call `downsample_webknossos_layer(dataset_path, layer_name="segmentation", coarsest_mag=32)` on an existing dataset. It invokes the official WEBKNOSSOS CLI for only the selected layer and can submit through Connectio's Slurm wrapper. Agglomerate references are retained when older CLI versions rewrite metadata; new magnifications inherit the existing mag's read permissions without broadening dataset access.
 
 ## Precomputed memory modes
 

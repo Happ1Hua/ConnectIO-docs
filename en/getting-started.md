@@ -29,7 +29,7 @@ pip install -e . --no-deps
 
 The segmentation extra is also available as `pip install -e ".[segmentation]"`. The legacy Funke post-processing stack (`lsds 0.1`, `waterz 0.9.6`, `daisy 0.2`, `funlib.segment 0.1`, `funlib.persistence 0.1.0`) must be installed in the segmentation environment. On the current cluster, `connectio/segmentation/scripts/activate_env.sh` exposes the verified legacy packages.
 
-Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for the branch to install, input requirements, configuration, commands, and coordinate checks. Synful compute commands run in the current process, so allocate compute resources before training or full-volume inference.
+Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for installation, input requirements, configuration, commands, and coordinate checks. Synful compute commands run in the current process, so allocate compute resources before training or full-volume inference.
 
 ## First stage submission
 
@@ -59,7 +59,7 @@ Use `job.status()`, `job.result(timeout=...)`, or `job.cancel()` when programmat
 
 ## Before the first run
 
-Start in a checkout of the [ConnectIO integration branch](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration) while its additions are under review. Check that the selected environment can import ConnectIO and that the commands expose their expected arguments:
+Start in a checkout of [ConnectIO main](https://github.com/Happ1Hua/ConnectIO/tree/main). Check that the selected environment can import ConnectIO and that the commands expose their expected arguments:
 
 ```bash
 python -m pip show connectio

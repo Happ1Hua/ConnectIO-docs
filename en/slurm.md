@@ -18,6 +18,15 @@ Public compute functions accept keyword-only `slurm=True` and `slurm_options=Non
 | Conda | `data_format_convert` | `lsd_pytorch` |
 | Time | 24 hours | 24 hours |
 
+The defaults are kept in `connectio/site_config.py`. Set
+`CONNECTIO_CPU_PARTITION`, `CONNECTIO_GPU_PARTITION`, or `CONNECTIO_CONDA_SH`
+to adapt submissions to another cluster. `CONNECTIO_CONVERSION_ENV` and
+`CONNECTIO_SEGMENTATION_ENV` select the environments used by conversion and
+segmentation stages; the existing `CONNECTIO_CPU_ENV` and `CONNECTIO_GPU_ENV`
+remain fallback aliases. `CONNECTIO_MONGOD` selects the segmentation service
+binary. Explicit `slurm_options` and `_connectio.mongod` stage settings take
+precedence. Site-specific standalone Slurm scripts have their own defaults.
+
 ```python
 from connectio.conversion import tiff_stack_to_zarr
 

@@ -57,7 +57,7 @@ print(job.job_id, job.stdout, job.stderr)
 
 ## 首次运行前
 
-新增功能仍在 [ConnectIO 整合分支](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration)中审核时，请先检出该分支。检查当前环境能导入 ConnectIO，且命令行参数符合预期：
+请使用 [ConnectIO 主分支](https://github.com/Happ1Hua/ConnectIO/tree/main)，并检查当前环境能导入 ConnectIO，且命令行参数符合预期：
 
 ```bash
 python -m pip show connectio

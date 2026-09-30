@@ -15,7 +15,7 @@ Zarr 是主要体数据格式。TIFF、PNG 和 TXM 导入默认写为 XYZ；部�
 | PNG | 切片栈 → Zarr | `png_stack_to_zarr` |
 | ZEISS TXM | TXM → Zarr | `txm_to_zarr` |
 | HDF5 | HDF5 ↔ Zarr | `hdf5_to_zarr`、`zarr_raw_to_hdf5_xyz` |
-| WebKnossos | WKW/ZIP ↔ Zarr | `wkw_to_zarr`、`zarr_to_wkw` |
+| WebKnossos | WKW/ZIP ↔ Zarr；Zarr2 → 可直接读取的 Zarr3 dataset；官方 CLI 下采样 | `wkw_to_zarr`、`zarr_to_wkw`、`zarr2_to_zarr3`、`downsample_webknossos_layer` |
 | Neuroglancer | precomputed ↔ Zarr | `precomputed_to_zarr`、`zarr_to_precomputed` |
 
 ```python
@@ -30,6 +30,10 @@ job = tiff_stack_to_zarr(
 ```
 
 PNG/TIFF 文件夹当前按文件名排序。请给数字层号补零（例如 `slice_0002.tif`、`slice_0010.tif`）或核对排序结果；`slice_10` 会排在 `slice_2` 前。多通道 PNG 或 hyperstack 写为独立 layer。TXM 支持多进程解码；WKW 可用于导出 WebKnossos segmentation。`zarr_raw_to_hdf5_xyz` 专门将 ZYX Zarr 输入转置为另一流程使用的 XYZ HDF5。
+
+`zarr2_to_zarr3` 每次从指定的 `source_dataset` 转换一个 3D 图层；`category="color"` 对应 raw，`category="segmentation"` 对应标签。重复调用并指定相同 `output_dataset_path` 可逐层添加图层；每次完成后自动写入或更新根目录的 `datasource-properties.json`。`axes` 可显式指定源数据轴顺序；源数组应有 `resolution` 和 `offset` 属性，也可传入 `voxel_size` 和 `offset`。默认通过 Slurm 提交，参考 `tutorials/zarr2_to_zarr3.py`。
+
+需要多倍率时，在转换调用中设置 `downsample_coarsest_mag=32`，或对已有 dataset 单独调用 `downsample_webknossos_layer(dataset_path, layer_name="segmentation", coarsest_mag=32)`。后者通过 WEBKNOSSOS 官方 CLI 仅处理指定图层，仍可由 Connectio 提交 Slurm。旧版 CLI 更新 metadata 后丢失的 agglomerate 附件引用会被自动保留；新增倍率的读取权限继承原倍率，不额外扩大数据集的访问范围。
 
 ## Precomputed 内存模式
 

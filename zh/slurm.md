@@ -18,6 +18,14 @@ permalink: /zh/slurm/
 | Conda | `data_format_convert` | `lsd_pytorch` |
 | 时限 | 24 小时 | 24 小时 |
 
+这些默认值集中在 `connectio/site_config.py`。可设置
+`CONNECTIO_CPU_PARTITION`、`CONNECTIO_GPU_PARTITION` 和 `CONNECTIO_CONDA_SH`
+以适配其他集群；`CONNECTIO_CONVERSION_ENV` 与 `CONNECTIO_SEGMENTATION_ENV`
+分别指定转换和分割环境，原有的 `CONNECTIO_CPU_ENV`、`CONNECTIO_GPU_ENV`
+仍作为后备变量。`CONNECTIO_MONGOD` 指定分割阶段的服务程序。
+显式传入的 `slurm_options` 和阶段配置中的 `_connectio.mongod` 优先。
+独立的站点专用 Slurm 脚本仍使用各自的默认值。
+
 ```python
 from connectio.conversion import tiff_stack_to_zarr
 

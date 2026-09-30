@@ -13,10 +13,10 @@ Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})�
 
 ## 1. 安装
 
-当前整合代码位于 [ConnectIO 的 `codex/synful-pytorch-integration` 分支](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration)。合并进 `main` 之前，请检出该分支：
+Synful 已收录于 [ConnectIO 主分支](https://github.com/Happ1Hua/ConnectIO/tree/main)：
 
 ```bash
-git clone --branch codex/synful-pytorch-integration https://github.com/Happ1Hua/ConnectIO.git
+git clone https://github.com/Happ1Hua/ConnectIO.git
 cd ConnectIO
 python -m pip install -e '.[synful-pytorch]'
 connectio-synful --help
@@ -28,7 +28,7 @@ connectio-synful --help
 
 ## 2. 准备输入和配置
 
-复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json)：
+复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)：
 
 ```bash
 cp connectio/synapse_detection/configs/synful.example.json my-synful.json
@@ -175,4 +175,4 @@ connectio-synful validate --config my-synful.json \
 | NML “Off-grid/negative/nonfinite coordinate” | 核对 raw 体素大小、原点、轴映射及候选坐标。 |
 | NML 在查看器中旋转或偏移 | 同时核对 `export.axis_order`、`export.origin_nm_xyz`、raw 的 `resolution`/`offset` 和 WEBKNOSSOS 数据集元数据。 |
 
-[源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json)对应本页介绍的分支。
+[源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)可配合本页使用。

@@ -57,7 +57,7 @@ project/
 
 源数据是本地 Neuroglancer precomputed 目录时用 `precomputed`，生成 `volumes/raw` 等 Zarr dataset。宽 XY 或大体积可选 `mode: "large"`，转换前先确认 `resolution`。源数据是需要配准的图像栈时用 `alignment`；它生成对齐 TIFF 和配准报告，**不会**生成 raw Zarr。审查并接受对齐结果后，再用 `tiff_stack_to_zarr` 转成供 LSD 使用的 raw Zarr。已有空间元数据正确的对齐 raw Zarr 时，可直接从 affinity 开始。
 
-[ConnectIO 分支中的阶段模板](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration/connectio/segmentation/configs/stages)需要复制到自己的运行目录并替换所有示例路径。stage JSON 中的路径相对该 JSON 文件解析。`block_size`、`context` 等 Funke 原生参数保留 Funke 所需单位，不会自动按体素数换算。
+[ConnectIO 主分支中的阶段模板](https://github.com/Happ1Hua/ConnectIO/tree/main/connectio/segmentation/configs/stages)需要复制到自己的运行目录并替换所有示例路径。stage JSON 中的路径相对该 JSON 文件解析。`block_size`、`context` 等 Funke 原生参数保留 Funke 所需单位，不会自动按体素数换算。
 
 ## 各阶段的输入、输出和审查
 

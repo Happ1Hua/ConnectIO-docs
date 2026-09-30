@@ -13,10 +13,10 @@ This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentatio
 
 ## 1. Install the integration
 
-The integration is currently available on the `codex/synful-pytorch-integration` branch of [ConnectIO](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-pytorch-integration). Check out that branch until the integration is merged into `main`:
+Synful is available on [ConnectIO main](https://github.com/Happ1Hua/ConnectIO/tree/main):
 
 ```bash
-git clone --branch codex/synful-pytorch-integration https://github.com/Happ1Hua/ConnectIO.git
+git clone https://github.com/Happ1Hua/ConnectIO.git
 cd ConnectIO
 python -m pip install -e '.[synful-pytorch]'
 connectio-synful --help
@@ -28,7 +28,7 @@ The source package can also be invoked as `python -m connectio.synapse_detection
 
 ## 2. Prepare the data and configuration
 
-Copy the [packaged example JSON](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json):
+Copy the [packaged example JSON](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json):
 
 ```bash
 cp connectio/synapse_detection/configs/synful.example.json my-synful.json
@@ -175,4 +175,4 @@ Legacy TensorFlow weights exported to NPZ can be converted with `connectio-synfu
 | NML “Off-grid/negative/nonfinite coordinate” | Check raw voxel size, physical origin, axis mapping, and candidate coordinates. |
 | NML appears rotated or displaced | Check `export.axis_order`, `export.origin_nm_xyz`, raw `resolution`/`offset`, and the WEBKNOSSOS dataset metadata together. |
 
-The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-pytorch-integration/connectio/synapse_detection/configs/synful.example.json) track the exact branch used by this page.
+The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json) accompany this guide.
