@@ -175,4 +175,10 @@ connectio-synful validate --config my-synful.json \
 | NML “Off-grid/negative/nonfinite coordinate” | 核对 raw 体素大小、原点、轴映射及候选坐标。 |
 | NML 在查看器中旋转或偏移 | 同时核对 `export.axis_order`、`export.origin_nm_xyz`、raw 的 `resolution`/`offset` 和 WEBKNOSSOS 数据集元数据。 |
 
+## 9. 复现真实数据整合测试
+
+[按步骤保留的测试脚本](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-real-data-tests/tests/synful_real)依次完成预检与 `inspect`、两步微调及续训、raw Zarr 部分推理与续推、提取、带神经元分割过滤的 CSV/NML 导出、留出 ROI 验证和产物检查。输入只读；数据路径、日志、checkpoint 和预测结果保存在 Git 忽略的 `tests/workspaces/synful_real/`。脚本需要可访问的真实 HDF5 标注、raw/segmentation Zarr 与兼容的 paired checkpoint，不会下载或公开这些数据。训练和推理应在 Slurm 计算节点运行。
+
+[E1Sp5D3 实测记录](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md)使用分别选定的两个真实小 ROI：全量 raw 已知阳性 ROI 提取 7 对，经分割过滤保留 6 对；GT 总计 274 对，选定验证 ROI 有 5 对，两步微调后得到 TP=1、FP=0、FN=4（F1≈0.333）。验证产生的 1 个候选可导出非空、含 1 棵树、2 个节点和 1 条边的 NML，但神经元分割过滤将其剔除。两份原始 TensorFlow NPZ 均成功转换，每个模型的 38 个张量与 paired checkpoint 对应张量完全一致。GT crop 到全量 raw 的坐标变换尚未确认，历史 checkpoint 与 GT 也可能重叠。这些是**流程功能测试结果**，不是独立测试集或全体积精度估计，更不代表候选经过生物学审查。
+
 [源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)可配合本页使用。
