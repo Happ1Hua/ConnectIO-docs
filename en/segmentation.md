@@ -45,7 +45,11 @@ The corrected affinity supervision treats a target as positive only when both vo
 
 ## Inference and post-processing
 
-Inference writes channel-first `uint8` predictions and copies raw `resolution` and `offset`. The local JSON block tracker permits restart when `mongo_required=false`. The affinity stage disables MongoDB for inference and runs LSD before ACRLSD.
+Raw training and inference share dtype-aware normalization: `uint8` uses 255, `uint16` uses 65535, and floating raw must be finite and in `[0, 1]`; all become `[-1, 1]`. Inputs must remain unchanged while inference runs. Output arrays record their channel/spatial axes as well as physical metadata. Raw without axis metadata retains the historical XYZ convention; set `axes` in the inference JSON to declare another stored order. This declares axes and does not transpose pixels.
+
+Resume is bound to a SHA-256 checkpoint hash, scientific configuration, raw dataset, geometry, and (for ACRLSD) the upstream LSD dataset. Local input revisions are detected from metadata and chunk-file sizes, modification times, and change times; this is not a content hash of the whole volume. It requires local directory-backed Zarr and scans file metadata at startup. A copied or edited input can require a new output even when its pixels are equal. Completion records are scoped per output dataset, MongoDB records are mirrored locally, and a lock allows only one writer to that dataset. A changed signature, unsigned legacy output/state, or missing output with completed records is rejected: choose a **new output path**. Do not delete state files to force reuse. Existing legacy results remain available for review/export but cannot be automatically resumed with this version.
+
+Inference writes channel-first `uint8` predictions and copies raw `resolution` and `offset`. The signed local JSON block tracker permits restart with identical inputs when `mongo_required=false`. The affinity stage disables MongoDB for inference and runs LSD before ACRLSD.
 
 Watershed extracts fragments from the affinity convention produced by the corrected model. Agglomeration writes region-adjacency graph edges and merge scores. LUT generation scans thresholds. The final `segmentation` stage now supports two user-selected outputs through `output_type`:
 
@@ -89,6 +93,18 @@ webknossos_dataset/
 The legacy `00.submit_affinity.sh` and `01.submit_crop_postprocess.sh` remain for compatibility, but the latter chains downstream steps and is not the preferred review-gated interface.
 
 ## Evaluation and viewing
+
+Evaluation keeps floating-point `resolution` and `offset`, so values such as `7.8125` nm and `0.5` nm are not truncated. Both label arrays must be 3-D, have the same spatial axis order and units, equal positive finite voxel sizes, and offsets on a shared voxel grid. It compares integer voxel indices with a grid-alignment tolerance of `1e-6` voxels. It does not resample or transpose inputs. The report includes the axes and units of the shared physical ROI. Legacy metadata without units is interpreted as nm.
+
+Declare axes using `axes` or `_ARRAY_DIMENSIONS`. If a legacy input has neither, explicitly supply its actual stored order:
+
+```bash
+connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
+  RESULT.zarr volumes/segmentation \
+  --gt-axes xyz --seg-axes xyz --output evaluation.json
+```
+
+Use `zyx` instead when that is the actual order. Contradictory declarations are rejected; convert mismatched inputs before evaluation. Missing `resolution`, invalid geometry, differing units, or fractional-voxel shifts cause an error rather than a silently rounded score.
 
 Evaluation intersects ground truth and prediction in world coordinates using Zarr `offset` and `resolution`, then reports VOI, Rand, label counts, foreground voxels, and the largest-segment fraction:
 

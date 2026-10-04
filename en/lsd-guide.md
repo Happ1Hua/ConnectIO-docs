@@ -63,3 +63,21 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 ```
 
 Evaluation intersects using Zarr `offset` and `resolution` and reports VOI and Rand measures. Metrics do not replace visual review: inspect missing labels, unusually large components, seams, and anatomical plausibility. The [digspider case study]({{ "/en/case-study/" | relative_url }}) documents why a plausible completion status can still hide a supervision error.
+
+## Input identity and coordinate validation
+
+Raw training and inference share dtype-aware normalization: `uint8` uses 255, `uint16` uses 65535, and floating raw must be finite and in `[0, 1]`; all become `[-1, 1]`. Inputs must remain unchanged while inference runs. Output arrays record their channel/spatial axes as well as physical metadata. Raw without axis metadata retains the historical XYZ convention; set `axes` in the inference JSON to declare another stored order. This declares axes and does not transpose pixels.
+
+Resume is bound to a SHA-256 checkpoint hash, scientific configuration, raw dataset, geometry, and (for ACRLSD) the upstream LSD dataset. Local input revisions are detected from metadata and chunk-file sizes, modification times, and change times; this is not a content hash of the whole volume. It requires local directory-backed Zarr and scans file metadata at startup. A copied or edited input can require a new output even when its pixels are equal. Completion records are scoped per output dataset, MongoDB records are mirrored locally, and a lock allows only one writer to that dataset. A changed signature, unsigned legacy output/state, or missing output with completed records is rejected: choose a **new output path**. Do not delete state files to force reuse. Existing legacy results remain available for review/export but cannot be automatically resumed with this version.
+
+Evaluation keeps floating-point `resolution` and `offset`, so values such as `7.8125` nm and `0.5` nm are not truncated. Both label arrays must be 3-D, have the same spatial axis order and units, equal positive finite voxel sizes, and offsets on a shared voxel grid. It compares integer voxel indices with a grid-alignment tolerance of `1e-6` voxels. It does not resample or transpose inputs. The report includes the axes and units of the shared physical ROI. Legacy metadata without units is interpreted as nm.
+
+Declare axes using `axes` or `_ARRAY_DIMENSIONS`. If a legacy input has neither, explicitly supply its actual stored order:
+
+```bash
+connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
+  RESULT.zarr volumes/segmentation \
+  --gt-axes xyz --seg-axes xyz --output evaluation.json
+```
+
+Use `zyx` instead when that is the actual order. Contradictory declarations are rejected; convert mismatched inputs before evaluation. Missing `resolution`, invalid geometry, differing units, or fractional-voxel shifts cause an error rather than a silently rounded score.

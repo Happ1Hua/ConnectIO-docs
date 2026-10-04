@@ -63,3 +63,21 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 ```
 
 评估按 Zarr 的 `offset`、`resolution` 求交集并输出 VOI、Rand 等指标。指标不能取代视觉审查：仍需检查缺失标签、异常大组件、拼缝与解剖合理性。[digspider 案例]({{ "/zh/case-study/" | relative_url }})展示了作业成功结束仍可能隐藏监督错误。
+
+## 输入身份与坐标校验
+
+训练与推理共用按 dtype 归一化的函数：`uint8` 按 255、`uint16` 按 65535 缩放；浮点 raw 必须有限且处于 `[0, 1]`，最终统一映射到 `[-1, 1]`。运行期间不得修改输入。输出同时记录通道/空间轴和物理元数据。raw 缺少轴元数据时保留历史 XYZ 约定；可在推理 JSON 中用 `axes` 声明其他存储顺序，这只声明轴，不转置像素。
+
+断点续跑绑定 checkpoint 的 SHA-256、科学配置、raw dataset、空间几何，以及 ACRLSD 的上游 LSD dataset。输入版本通过元数据和 chunk 文件的大小、修改时间、变更时间识别，**不是全体积像素内容 hash**；目前要求本地目录式 Zarr，启动时会扫描文件元数据。复制或编辑输入后，即使像素相等，也可能需要新输出。完成记录按输出 dataset 隔离，MongoDB 记录同时保留本地副本；同一 dataset 只允许一个写入进程。签名变化、无签名的 legacy 输出/状态、或已有完成记录但输出丢失时均拒绝续跑，须使用**新输出路径**。不要删除状态文件来强行复用。旧结果仍可用于审查/导出，但不能由此版本自动续跑。
+
+评估保留浮点 `resolution` 和 `offset`，不会截断 `7.8125` nm 或 `0.5` nm 等值。两份标签数组必须为三维，空间轴顺序与单位相同，体素尺寸相等、有限且为正，offset 位于同一体素网格上；通过整数体素索引求交集，网格对齐容差为 `1e-6` 体素。不自动重采样或转置。报告包含交集物理 ROI 的轴与单位。legacy 元数据缺少单位时按 nm 解释。
+
+轴可记录为 `axes` 或 `_ARRAY_DIMENSIONS`。旧输入两者都没有时，须显式提供真实存储顺序：
+
+```bash
+connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
+  RESULT.zarr volumes/segmentation \
+  --gt-axes xyz --seg-axes xyz --output evaluation.json
+```
+
+实际存储为 ZYX 时改为 `zyx`。显式声明与元数据冲突会报错；轴不一致时先转换再评估。缺少 `resolution`、非法几何、单位不同或存在非整数体素偏移时拒绝计算，不静默取整。

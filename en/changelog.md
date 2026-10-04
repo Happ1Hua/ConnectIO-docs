@@ -7,6 +7,13 @@ permalink: /en/changelog/
 
 # Changelog
 
+## Unreleased — 2026-10-04
+
+- Unified LSD/ACRLSD raw normalization across training and inference, including uint16 and normalized floating inputs.
+- Bound inference resume to checkpoint, input revision, geometry, and configuration signatures, with per-dataset state and a single-writer lock; unsigned legacy outputs require a new path.
+- Preserved fractional evaluation geometry and validated axes, units, and voxel-grid alignment; added explicit legacy axes options.
+- Added CPU regression checks for scientific input/output correctness.
+
 ## 26.09.23
 
 - Made public compute APIs Slurm-first with CPU `C64M512G` and GPU `GPUA800` defaults, configurable resource and environment options, job status/result/cancel handles, and no login-node fallback.

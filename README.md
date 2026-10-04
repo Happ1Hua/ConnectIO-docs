@@ -9,3 +9,5 @@ ConnectIO 格式转换、预处理、对齐、分割、Slurm 执行及验证流�
 - [中文](zh/)
 
 Documentation version: **26.09.23**
+
+LSD inference and coordinate safety update: **2026-10-04**
