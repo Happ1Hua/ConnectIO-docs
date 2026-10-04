@@ -7,7 +7,7 @@ permalink: /en/
 
 # ConnectIO
 
-ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.09.23** makes computation Slurm-first and exposes every LSD segmentation phase as an independent submission.
+ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.10.04** adds reproducible training recovery, signed inference, bounded volume processing, and disk-backed evaluation.
 
 ## Documentation
 

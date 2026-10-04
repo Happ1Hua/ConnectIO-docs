@@ -7,7 +7,7 @@ permalink: /en/changelog/
 
 # Changelog
 
-## Unreleased — 2026-10-04
+## 26.10.04 — 2026-10-04
 
 - Added training geometry validation, bounded sampling and exact indexed recovery with atomic checkpoints.
 - Added Synful raw/output chunk revision checks, bounded resampling with recoverable publication and nearest uint64 label support.
