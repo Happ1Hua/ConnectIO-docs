@@ -118,3 +118,5 @@ connectio-lsd-view RESULT.zarr volumes/raw volumes/segmentation
 ```
 
 A lightweight CPU smoke test may use a reduced network to validate I/O and control flow. Production Spider smoke tests should run one real LSD block followed by one ACRLSD block on `GPUA800`, writing to a dedicated test Zarr rather than the source volume.
+
+See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.

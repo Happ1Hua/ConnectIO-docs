@@ -9,6 +9,10 @@ permalink: /en/changelog/
 
 ## Unreleased — 2026-10-04
 
+- Added training geometry validation, bounded sampling and exact indexed recovery with atomic checkpoints.
+- Added Synful raw/output chunk revision checks, bounded resampling with recoverable publication and nearest uint64 label support.
+- Added disk-backed evaluation and bounded batched/multi-GPU inference with optional CUDA mixed precision and timing reports.
+
 - Unified LSD/ACRLSD raw normalization across training and inference, including uint16 and normalized floating inputs.
 - Bound inference resume to checkpoint, input revision, geometry, and configuration signatures, with per-dataset state and a single-writer lock; unsigned legacy outputs require a new path.
 - Preserved fractional evaluation geometry and validated axes, units, and voxel-grid alignment; added explicit legacy axes options.

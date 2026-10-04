@@ -79,7 +79,7 @@ connectio-synful train --config my-synful.json --device cuda \
 
 续训恢复模型、优化器、scaler、步数和保存的 PyTorch RNG 状态。模型、数据、split 和指定的训练语义必须与 checkpoint 相容；独立实验请换输出目录。
 
-Python API 提供 `train(config, init_checkpoint=...)` 以只读取初始权重，但目前 `connectio-synful train` **没有** `init_checkpoint` 参数。`--resume` 是完整续训，不是“仅加载权重”的微调开关。
+Python API 提供 `train(config, init_checkpoint=...)`，CLI 提供 `--init-checkpoint`，可在新输出目录中仅加载初始权重。`--resume` 是完整续训，不是“仅加载权重”的微调开关。
 
 ## 4. 先检查 ROI，再运行全体积推理
 
@@ -182,3 +182,5 @@ connectio-synful validate --config my-synful.json \
 [E1Sp5D3 实测记录](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md)使用分别选定的两个真实小 ROI：全量 raw 已知阳性 ROI 提取 7 对，经分割过滤保留 6 对；GT 总计 274 对，选定验证 ROI 有 5 对，两步微调后得到 TP=1、FP=0、FN=4（F1≈0.333）。验证产生的 1 个候选可导出非空、含 1 棵树、2 个节点和 1 条边的 NML，但神经元分割过滤将其剔除。两份原始 TensorFlow NPZ 均成功转换，每个模型的 38 个张量与 paired checkpoint 对应张量完全一致。GT crop 到全量 raw 的坐标变换尚未确认，历史 checkpoint 与 GT 也可能重叠。这些是**流程功能测试结果**，不是独立测试集或全体积精度估计，更不代表候选经过生物学审查。
 
 [源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)可配合本页使用。
+
+2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。

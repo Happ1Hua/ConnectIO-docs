@@ -79,7 +79,7 @@ connectio-synful train --config my-synful.json --device cuda \
 
 Resume restores model weights, optimizer, scaler, step, and the saved PyTorch RNG state. The model, data, splits, and specified training semantics must match the checkpoint. Use a new output directory for an independent run.
 
-The Python API also supports `train(config, init_checkpoint=...)` for weights-only initialization, but the current `connectio-synful train` command does **not** expose `init_checkpoint`. `--resume` continues a training run; it is not a weights-only fine-tune switch.
+The Python API supports `train(config, init_checkpoint=...)` and the CLI supports `--init-checkpoint` for weights-only initialization into a new output directory. `--resume` continues a training run; it is not a weights-only fine-tune switch.
 
 ## 4. Predict a small ROI, then a volume
 
@@ -182,3 +182,5 @@ The [numbered test scripts](https://github.com/Happ1Hua/ConnectIO/tree/codex/syn
 The [recorded E1Sp5D3 run](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md) used two deliberately small, independently selected real ROIs. The full-raw positive-control ROI yielded 7 candidates, 6 after segmentation filtering. The GT contained 274 pairs overall; its chosen validation ROI contained 5. After two fine-tuning steps, validation gave TP=1, FP=0, FN=4 (F1≈0.333). That validation candidate produced a nonempty unfiltered NML (one tree, two nodes, one edge), but the optional neuron-segmentation filter rejected it. The original indicator/vector TensorFlow NPZ files also converted successfully: all 38 tensors per model matched the corresponding paired-checkpoint tensors exactly. The GT-crop-to-full-raw coordinate transform is not established, and the historical checkpoint may overlap the GT region. These are functional test observations, **not** an independent or full-volume accuracy estimate or biological acceptance of candidates.
 
 The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json) accompany this guide.
+
+See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.

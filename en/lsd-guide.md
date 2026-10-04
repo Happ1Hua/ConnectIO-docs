@@ -81,3 +81,5 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 ```
 
 Use `zyx` instead when that is the actual order. Contradictory declarations are rejected; convert mismatched inputs before evaluation. Missing `resolution`, invalid geometry, differing units, or fractional-voxel shifts cause an error rather than a silently rounded score.
+
+See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.

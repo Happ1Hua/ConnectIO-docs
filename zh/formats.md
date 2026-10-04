@@ -86,8 +86,10 @@ print(job.job_id, job.stdout)
 
 `rotate_zarr` 按绕实验室 X/Y/Z 轴旋转的 90° 次数工作，执行顺序由 `apply_order` 指定（默认 `xyz`）；支持三维 XYZ 和 channel-first CXYZ。旋转会更新 `resolution` 的顺序；如果输入有 `offset`，当前实现会将其重置为 `[0, 0, 0]`。与其他体积叠加前应重新确认世界坐标原点。
 
-`resample_zarr` 可用 `target_resolution` 或 `scale_factors` 指定缩放，并采用线性插值。需保留源数据时指定 `output_dataset_name`；未指定时旋转/重采样会操作输入 dataset。线性插值会破坏离散标签 ID，因此该重采样器适用于连续强度场，不适用于类别型 segmentation 标签。完成后检查物理范围、shape、resolution 和数值范围。
+`resample_zarr` 可用 `target_resolution` 或 `scale_factors` 指定缩放，并采用线性插值。需保留源数据时指定 `output_dataset_name`；未指定时旋转/重采样会操作输入 dataset。连续强度场使用线性插值；类别型 segmentation 标签使用 `interpolation="nearest"`，以精确保留 ID。完成后检查物理范围、shape、resolution 和数值范围。
 
 ## 结果验证与故障定位
 
 删除或替换源数据前，先比较若干精确体素坐标和至少一张完整切片，同时核对 shape、dtype、通道数、`resolution` 与 `offset`。XY 看起来正确仍可能有 Z 顺序反转或轴交换。转换中断后，检查输出 store 是否不完整；除非该转换器明确支持恢复，否则使用新目标目录重新转换。
+
+2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。

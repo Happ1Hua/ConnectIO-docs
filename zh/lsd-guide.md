@@ -81,3 +81,5 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 ```
 
 实际存储为 ZYX 时改为 `zyx`。显式声明与元数据冲突会报错；轴不一致时先转换再评估。缺少 `resolution`、非法几何、单位不同或存在非整数体素偏移时拒绝计算，不静默取整。
+
+2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。

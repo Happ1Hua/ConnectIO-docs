@@ -86,8 +86,10 @@ The example paths are placeholders. `mode="small"` uses full XY slabs with paral
 
 `rotate_zarr` accepts 90° quarter-turn counts around lab X, Y, and Z, applied in `apply_order` (default `xyz`). It supports 3-D XYZ and channel-first CXYZ. A rotation updates the `resolution` ordering; when an `offset` attribute exists, the implementation resets it to `[0, 0, 0]`. Re-establish the intended world origin before overlaying the result with another volume.
 
-`resample_zarr` accepts either `target_resolution` or `scale_factors` and uses linear interpolation. Supply `output_dataset_name` when preserving the input; without it, rotate/resample operate on the input dataset. Linear interpolation changes label IDs, so this resampler should be used for continuous intensity fields, not categorical segmentation labels. Verify physical extent, shape, resolution, and data range after processing.
+`resample_zarr` accepts either `target_resolution` or `scale_factors` and uses linear interpolation. Supply `output_dataset_name` when preserving the input; without it, rotate/resample operate on the input dataset. Use linear interpolation for continuous intensity fields; for categorical segmentation labels, set `interpolation="nearest"` to preserve IDs exactly. Verify physical extent, shape, resolution, and data range after processing.
 
 ## Verification and troubleshooting
 
 Before deleting or replacing a source, compare a small set of exact voxel coordinates and at least one full slice; check shape, dtype, channel count, `resolution`, and `offset`. A visually plausible XY view can still hide a reversed Z order or swapped axes. If a conversion stops partway through, inspect whether the output store is incomplete; select a fresh destination for a clean rerun unless the particular converter documents restart behavior.
+
+See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.

@@ -22,6 +22,8 @@ ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, 
 - [Changelog]({{ "/en/changelog/" | relative_url }}): current and historical releases.
 - [digspider case study]({{ "/en/case-study/" | relative_url }}): the validated 8 nm workflow and affinity-supervision correction.
 
+- [Code optimization and resource controls]({{ "/en/optimization/" | relative_url }}): reproducible training, streaming processing, evaluation memory and inference settings.
+
 ## Design rules
 
 1. A compute entry point submits to Slurm by default; it never silently falls back to a login node.

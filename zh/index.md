@@ -19,6 +19,7 @@ ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分�
 - [Slurm 执行]({{ "/zh/slurm/" | relative_url }})：默认资源、覆盖参数、作业对象和集群规则。
 - [模块与教程]({{ "/zh/modules/" | relative_url }})：格式、预处理、对齐、可视化和示例。
 - [格式与体数据操作]({{ "/zh/formats/" | relative_url }})：支持的互转格式、内存模式和处理操作。
+- [代码优化与资源控制]({{ "/zh/optimization/" | relative_url }}): 可复现训练、流式处理、评估内存和推理参数。
 - [更新记录]({{ "/zh/changelog/" | relative_url }})：当前及历史版本。
 - [digspider 实测案例]({{ "/zh/case-study/" | relative_url }})：8 nm 全流程及 affinity 监督修复记录。
 

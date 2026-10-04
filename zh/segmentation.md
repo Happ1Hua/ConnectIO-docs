@@ -118,3 +118,5 @@ connectio-lsd-view RESULT.zarr volumes/raw volumes/segmentation
 ```
 
 CPU 轻量 smoke test 可用缩小网络验证 I/O 和控制流。生产尺寸 Spider smoke test 应在 `GPUA800` 分别运行一个真实 LSD block 和一个 ACRLSD block，并写入独立测试 Zarr，不修改源体积。
+
+2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。
