@@ -14,4 +14,4 @@ Training recovery and resource-control update: **2026-10-04**
 
 - [LSD/ACRLSD models](https://huggingface.co/happyhua1/ConnectIO-LSD)
 - [Synful models](https://huggingface.co/happyhua1/ConnectIO-Synful)
-- [Model download guide](en/models/) · [模型下载](zh/models/)
+- [Model download guide](https://Happ1Hua.github.io/ConnectIO-docs/en/models/) · [模型下载](https://Happ1Hua.github.io/ConnectIO-docs/zh/models/)
