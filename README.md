@@ -11,3 +11,7 @@ ConnectIO 格式转换、预处理、对齐、分割、Slurm 执行及验证流�
 Documentation version: **26.10.04**
 
 Training recovery and resource-control update: **2026-10-04**
+
+- [LSD/ACRLSD models](https://huggingface.co/happyhua1/ConnectIO-LSD)
+- [Synful models](https://huggingface.co/happyhua1/ConnectIO-Synful)
+- [Model download guide](en/models/) · [模型下载](zh/models/)

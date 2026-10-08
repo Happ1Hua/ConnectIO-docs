@@ -7,6 +7,8 @@ permalink: /zh/getting-started/
 
 # 安装与开始
 
+推理前可下载已公开的 LSD/Synful checkpoint；固定版本、校验和匹配网络参数见[模型下载]({{ "/zh/models/" | relative_url }})。
+
 ## 环境
 
 | 工作 | Conda 环境 | 默认分区 |

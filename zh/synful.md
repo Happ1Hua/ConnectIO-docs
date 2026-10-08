@@ -9,7 +9,7 @@ permalink: /zh/synful/
 
 ConnectIO 将 Synful 的 PyTorch 实现放在独立的 `connectio.synapse_detection.synful_pytorch` 包中，而不是 `segmentation` 目录。模型预测突触位置概率及指向配对端点的位移向量；后续流程提取 pre/post 候选，并导出 CSV 和 WEBKNOSSOS NML 骨架。包中还包含训练、验证、TensorFlow NPZ 权重转换、可选的分割过滤及分块 NMS 工具。
 
-Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。ConnectIO 不附带原 Synful 项目的实验数据或训练权重。
+Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。源码包不附带原 Synful 实验数据。完整 paired checkpoint 已发布于 [Hugging Face ConnectIO-Synful](https://huggingface.co/happyhua1/ConnectIO-Synful)，固定版本下载、校验和匹配的 `model` 参数见[模型下载]({{ "/zh/models/" | relative_url }})。公开权重用于推理或 `--init-checkpoint` 初始化，不支持精确训练 `--resume`。
 
 ## 1. 安装
 

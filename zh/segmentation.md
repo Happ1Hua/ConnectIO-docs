@@ -37,7 +37,7 @@ permalink: /zh/segmentation/
 | LSD | `lsd_spider_8x8x8nm_fibsem_v1_450000.pt` | 450000 |
 | ACRLSD | `acrlsd_spider_8x8x8nm_fibsem_v1_230000.pt` | 230000 |
 
-权重来自内部 TensorFlow/MALA checkpoint 转换，并通过 Git LFS 管理。配置设置 `activate_upsampling=true`，保留原网络反卷积后的 ReLU。manifest 记录物种、分辨率、成像方式、版本和迭代数。
+预训练权重通过 [Hugging Face ConnectIO-LSD](https://huggingface.co/happyhua1/ConnectIO-LSD) 下载，包含 Spider、DigSpider 和联合多数据集模型。固定版本下载、校验和配套配置见[模型下载]({{ "/zh/models/" | relative_url }})。Spider 权重来自内部 TensorFlow/MALA checkpoint 转换，配置设置 `activate_upsampling=true`，保留原网络反卷积后的 ReLU。Hub 文件名、哈希与原本地 manifest 不同，需修改 checkpoint 路径并使用下载的 manifest。
 
 训练样本需要 `volumes/raw`、`volumes/labels/neuron_ids`、`volumes/labels/labels_mask`。GPU 训练使用 `connectio-lsd-train` 或 `connectio/segmentation/scripts/submit_training.sh`；配置中的网络结构必须与 checkpoint 一致。
 

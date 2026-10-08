@@ -11,6 +11,8 @@ ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, 
 
 ## Documentation
 
+- [Model downloads]({{ "/en/models/" | relative_url }}): published LSD/Synful bundles, pinned revisions, checksums and checkpoint configuration.
+
 - [Install and start]({{ "/en/getting-started/" | relative_url }}): environments, installation, and first submissions.
 - [Raw-to-segmentation pipeline]({{ "/en/pipeline/" | relative_url }}): stage boundaries, review gates, and restart behavior.
 - [Segmentation]({{ "/en/segmentation/" | relative_url }}): LSD/ACRLSD inference, Funke post-processing, configs, MongoDB state, and models.

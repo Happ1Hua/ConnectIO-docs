@@ -11,7 +11,7 @@ permalink: /zh/lsd-guide/
 
 ## 准备输入和运行目录
 
-首先准备 XYZ 轴顺序的三维 raw Zarr，记录 shape、dtype、`resolution` 和 `offset`；后两个字段决定物理坐标，不只是查看器设置。准备与网络结构匹配的 LSD、ACRLSD checkpoint。默认 Spider 模型面向 8 nm 各向同性 FIB-SEM，不能未经验证直接用于其他分辨率或成像方式。manifest 只记录身份和迭代次数，并不会自动下载权重。
+首先准备 XYZ 轴顺序的三维 raw Zarr，记录 shape、dtype、`resolution` 和 `offset`；后两个字段决定物理坐标，不只是查看器设置。准备与网络结构匹配的 LSD、ACRLSD checkpoint。默认 Spider 模型面向 8 nm 各向同性 FIB-SEM，不能未经验证直接用于其他分辨率或成像方式。按[模型下载与校验指南]({{ "/zh/models/" | relative_url }})从 [ConnectIO-LSD](https://huggingface.co/happyhua1/ConnectIO-LSD) 下载配套权重；manifest 本身不会自动下载模型或修改配置路径。
 
 将 `connectio/segmentation/configs/stages/` 中的 JSON 模板复制到运行目录的 `configs/`，修改数据路径、dataset、权重、block、worker 和 `_connectio.run_dir`。阶段 JSON 中的相对路径以该 JSON 所在目录解析；不同实验使用不同输出路径。分割作业读取 raw 时，不要同时覆盖该 Zarr。
 

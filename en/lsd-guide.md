@@ -11,7 +11,7 @@ This guide expands the [segmentation overview]({{ "/en/segmentation/" | relative
 
 ## Prepare inputs and a run directory
 
-Start with a 3D raw Zarr dataset whose spatial axes are XYZ. Record its shape, dtype, `resolution`, and `offset`; these are physical-coordinate metadata, not just viewer settings. Prepare compatible LSD and ACRLSD checkpoints. The default Spider pair was trained for 8 nm isotropic FIB-SEM; do not treat it as a universal model for another resolution or modality. The manifest lists the model identity and iteration, but weights must be available locally; a manifest entry does not download a checkpoint.
+Start with a 3D raw Zarr dataset whose spatial axes are XYZ. Record its shape, dtype, `resolution`, and `offset`; these are physical-coordinate metadata, not just viewer settings. Prepare compatible LSD and ACRLSD checkpoints. The default Spider pair was trained for 8 nm isotropic FIB-SEM; do not treat it as a universal model for another resolution or modality. Download a compatible pair from [ConnectIO-LSD](https://huggingface.co/happyhua1/ConnectIO-LSD), following the [download and checksum guide]({{ "/en/models/" | relative_url }}). A manifest entry does not automatically download weights or update your config paths.
 
 Copy the JSON examples in `connectio/segmentation/configs/stages/` into a new `configs/` directory. Edit data paths, datasets, checkpoints, block sizes, worker resources, and `_connectio.run_dir`. Paths in the stage config resolve relative to that JSON file. Keep distinct output locations for separate experiments. The source Zarr should not be overwritten by conversion or preprocessing while a segmentation job reads it.
 

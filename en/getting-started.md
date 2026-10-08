@@ -7,6 +7,8 @@ permalink: /en/getting-started/
 
 # Install and start
 
+Download published LSD/Synful checkpoints before inference; [model downloads]({{ "/en/models/" | relative_url }}) covers revisions, checksums and matching network configuration.
+
 ## Environments
 
 The cluster workflow uses two Conda environments:

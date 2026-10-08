@@ -37,7 +37,7 @@ The default Spider pair targets 8×8×8 nm FIB-SEM:
 | LSD | `lsd_spider_8x8x8nm_fibsem_v1_450000.pt` | 450000 |
 | ACRLSD | `acrlsd_spider_8x8x8nm_fibsem_v1_230000.pt` | 230000 |
 
-The weights are internal TensorFlow/MALA conversions and Git LFS assets. Their configs set `activate_upsampling=true` to preserve the source transposed-convolution ReLU behavior. The model manifest records species, resolution, modality, version, and iteration.
+Download pretrained bundles from [ConnectIO-LSD on Hugging Face](https://huggingface.co/happyhua1/ConnectIO-LSD). The Hub includes Spider, DigSpider and joint multi-dataset pairs. See [model downloads]({{ "/en/models/" | relative_url }}) for pinned downloads, checksums and matching configuration. The Spider weights are internal TensorFlow/MALA conversions; their configs set `activate_upsampling=true` to preserve the source transposed-convolution ReLU behavior. Hub filenames and hashes differ from the historical local manifest, so update checkpoint paths and use the downloaded manifest.
 
 Training data requires `volumes/raw`, `volumes/labels/neuron_ids`, and `volumes/labels/labels_mask`. GPU training uses `connectio-lsd-train` or `connectio/segmentation/scripts/submit_training.sh`. LSD and ACRLSD configs must use the same architecture as their checkpoints.
 

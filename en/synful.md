@@ -9,7 +9,7 @@ permalink: /en/synful/
 
 ConnectIO provides the PyTorch Synful pipeline as `connectio.synapse_detection.synful_pytorch`, under its own `synapse_detection` package rather than `segmentation`. It predicts a postsynaptic indicator and a partner displacement vector, extracts candidate pre/post pairs, and exports CSV and WEBKNOSSOS NML skeletons. The package also provides training, checkpoint validation, TensorFlow NPZ weight conversion, optional segmentation filtering, and blockwise NMS utilities.
 
-This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentation/" | relative_url }}). The two workflows may share the same raw and neuron segmentation volumes, but Synful uses its own configuration, checkpoints, and output directory. ConnectIO does not include the original Synful experiment data or trained weights.
+This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentation/" | relative_url }}). The two workflows may share the same raw and neuron segmentation volumes, but Synful uses its own configuration, checkpoints, and output directory. Original Synful experiment data is not bundled with the source. The complete paired checkpoint is available from [ConnectIO-Synful on Hugging Face](https://huggingface.co/happyhua1/ConnectIO-Synful); see [model downloads]({{ "/en/models/" | relative_url }}) for revision-pinned downloads, verification and the matching `model` configuration. The published checkpoint supports inference or `--init-checkpoint`, not exact training `--resume`.
 
 ## 1. Install the integration
 

@@ -7,6 +7,10 @@ permalink: /en/changelog/
 
 # Changelog
 
+## Documentation update — 2026-10-08
+
+- Published model links and a bilingual guide now cover LSD/Synful downloads, pinned revisions, checksums, paired configuration and initialization/recovery limits.
+
 ## 26.10.04 — 2026-10-04
 
 - Added training geometry validation, bounded sampling and exact indexed recovery with atomic checkpoints.
