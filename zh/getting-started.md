@@ -7,7 +7,7 @@ permalink: /zh/getting-started/
 
 # 安装与开始
 
-推理前可下载已公开的 LSD/Synful checkpoint；固定版本、校验和匹配网络参数见[模型下载]({{ "/zh/models/" | relative_url }})。
+推理前可用本地 checkpoint 生成匹配配置并做无需 GT 的预检；模型仓库当前为 private，说明见[模型下载]({{ "/zh/models/" | relative_url }})。
 
 ## 环境
 

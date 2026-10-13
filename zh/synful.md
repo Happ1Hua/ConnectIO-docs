@@ -9,7 +9,7 @@ permalink: /zh/synful/
 
 ConnectIO 将 Synful 的 PyTorch 实现放在独立的 `connectio.synapse_detection.synful_pytorch` 包中，而不是 `segmentation` 目录。模型预测突触位置概率及指向配对端点的位移向量；后续流程提取 pre/post 候选，并导出 CSV 和 WEBKNOSSOS NML 骨架。包中还包含训练、验证、TensorFlow NPZ 权重转换、可选的分割过滤及分块 NMS 工具。
 
-Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。源码包不附带原 Synful 实验数据。完整 paired checkpoint 已发布于 [Hugging Face ConnectIO-Synful](https://huggingface.co/happyhua1/ConnectIO-Synful)，固定版本下载、校验和匹配的 `model` 参数见[模型下载]({{ "/zh/models/" | relative_url }})。公开权重用于推理或 `--init-checkpoint` 初始化，不支持精确训练 `--resume`。
+Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。源码包不附带原 Synful 实验数据。完整 paired checkpoint 保存在当前为 private、需授权的 [Hugging Face ConnectIO-Synful](https://huggingface.co/happyhua1/ConnectIO-Synful)，固定版本下载、校验和匹配的 `model` 参数见[模型下载]({{ "/zh/models/" | relative_url }})。导出权重用于推理或 `--init-checkpoint` 初始化，不支持精确训练 `--resume`。
 
 ## 1. 安装
 
@@ -27,6 +27,8 @@ connectio-synful --help
 如果命令行脚本不可用，也可运行 `python -m connectio.synapse_detection.synful_pytorch`。原先导入 `connectio.segmentation.synful_pytorch` 的脚本需要改为新路径；`connectio-synful` 命令名保持不变。
 
 ## 2. 准备输入和配置
+
+只做预训练推理时，优先按[模型配置指南]({{ "/zh/models/" | relative_url }})生成不需要 GT 的配置，再运行 `inspect --inference-only`；模型参数会自动读取。下面的通用示例用于训练或自定义网络。
 
 复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)：
 

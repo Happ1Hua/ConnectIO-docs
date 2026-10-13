@@ -7,6 +7,14 @@ permalink: /en/changelog/
 
 # Changelog
 
+## 26.10.13 — 2026-10-13
+
+- Added local inference config generation for Spider, DigSpider, joint LSD/ACRLSD and paired Synful bundles.
+- Added checkpoint parameter/identity conflict checks and GT-free, read-only inference preflight.
+- Fixed inference from paired Synful exports without a training section while retaining vector scale.
+- Model repositories are private; documentation now distinguishes authorized downloads from local use.
+
+
 ## Documentation update — 2026-10-08
 
 - Published model links and a bilingual guide now cover LSD/Synful downloads, pinned revisions, checksums, paired configuration and initialization/recovery limits.

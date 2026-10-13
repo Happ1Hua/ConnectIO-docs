@@ -7,11 +7,11 @@ permalink: /en/
 
 # ConnectIO
 
-ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.10.04** adds reproducible training recovery, signed inference, bounded volume processing, and disk-backed evaluation.
+ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.10.13** adds local model configuration, automatic checkpoint parameter validation and GT-free inference preflight, alongside reproducible training and bounded volume processing.
 
 ## Documentation
 
-- [Model downloads]({{ "/en/models/" | relative_url }}): published LSD/Synful bundles, pinned revisions, checksums and checkpoint configuration.
+- [Model downloads]({{ "/en/models/" | relative_url }}): local config generation, automatic parameter validation, GT-free preflight and private model access.
 
 - [Install and start]({{ "/en/getting-started/" | relative_url }}): environments, installation, and first submissions.
 - [Raw-to-segmentation pipeline]({{ "/en/pipeline/" | relative_url }}): stage boundaries, review gates, and restart behavior.

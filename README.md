@@ -8,9 +8,13 @@ ConnectIO 格式转换、预处理、对齐、分割、Slurm 执行及验证流�
 - [English](en/)
 - [中文](zh/)
 
-Documentation version: **26.10.04**
+Documentation version: **26.10.13**
 
 Training recovery and resource-control update: **2026-10-04**
+
+Model configuration and GT-free preflight update: **2026-10-13**
+
+Model repositories are currently private; downloads require access permission. 本地模型配置与预检无需网络，模型仓库当前为私有。
 
 - [LSD/ACRLSD models](https://huggingface.co/happyhua1/ConnectIO-LSD)
 - [Synful models](https://huggingface.co/happyhua1/ConnectIO-Synful)

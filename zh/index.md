@@ -7,11 +7,11 @@ permalink: /zh/
 
 # ConnectIO
 
-ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.10.04** 版本增加可复现训练恢复、推理身份校验、流式体积处理和磁盘计数评估。
+ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.10.13** 版本增加本地模型配置生成、checkpoint 参数自动校验和无需 GT 的推理预检，并保留可复现训练与有界体数据处理能力。
 
 ## 文档
 
-- [模型下载]({{ "/zh/models/" | relative_url }}): 公开 LSD/Synful 权重、固定版本下载、文件校验及模型配置。
+- [模型下载]({{ "/zh/models/" | relative_url }}): 本地模型配置生成、自动参数校验、无需 GT 的预检及私有权重访问。
 
 - [安装与开始]({{ "/zh/getting-started/" | relative_url }})：环境、安装和首次提交。
 - [raw 到 segmentation 流程]({{ "/zh/pipeline/" | relative_url }})：阶段边界、人工审查和断点启动。
