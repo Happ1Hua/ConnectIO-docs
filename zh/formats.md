@@ -93,3 +93,8 @@ print(job.job_id, job.stdout)
 删除或替换源数据前，先比较若干精确体素坐标和至少一张完整切片，同时核对 shape、dtype、通道数、`resolution` 与 `offset`。XY 看起来正确仍可能有 Z 顺序反转或轴交换。转换中断后，检查输出 store 是否不完整；除非该转换器明确支持恢复，否则使用新目标目录重新转换。
 
 2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。
+
+
+## Zarr2 / Zarr3（26.10.28）
+
+体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。

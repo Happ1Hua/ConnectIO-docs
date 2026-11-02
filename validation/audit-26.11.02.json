@@ -1,0 +1,96 @@
+{
+  "version": "26.11.02",
+  "date": "2026-11-02",
+  "review": {
+    "claimed_findings": 32,
+    "described_findings": 28,
+    "blank_entries": [
+      "high-2",
+      "high-3",
+      "high-5",
+      "medium-7"
+    ],
+    "disposition": "27 described findings addressed; NML/CSV permutation issue not reproduced across all six asymmetric anisotropic permutations"
+  },
+  "full_suite": {
+    "tests": 400,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": 100.782
+  },
+  "final_publication_and_path_recheck": {
+    "tests": 89,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": 6.041
+  },
+  "previous_changed_area_recheck": {
+    "tests": 151,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": 80.883
+  },
+  "command": "MKL_THREADING_LAYER=GNU CONNECTIO_RUN_FUNKE_SMOKE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 CUDA_VISIBLE_DEVICES= python -m pytest tests -q",
+  "python": "3.10.16",
+  "dependencies": {
+    "torch": "2.7.0",
+    "numpy": "1.26.4",
+    "zarr": "2.18.3",
+    "tensorstore": "0.1.78",
+    "daisy": "0.2",
+    "lsds": "0.1",
+    "webknossos": "2.0.7",
+    "cloud-volume": "12.15.2"
+  },
+  "fast_checks": {
+    "passed": 33
+  },
+  "packaging": {
+    "sdist": true,
+    "wheel": true,
+    "normalized_distribution_version": "26.11.2"
+  },
+  "coverage": [
+    "malicious pickle rejected by training loaders",
+    "TIFF source preservation and mixed-slice dtype rejection",
+    "failed rotation creation preserves original; zero-rotation copies; physical ROI center preserved",
+    "Zarr2 and Zarr3 prediction chunk deletion, content mutation and missing output detection",
+    "input mutation during asynchronous LSD inference",
+    "checkpoint hash and model loaded from identical byte snapshot",
+    "processing symlink escapes and hardlink aliases rejected",
+    "complete preprocessing stack reruns and rollback",
+    "cross-block NMS plateau matches global extraction",
+    "uint64 sparse label bounding boxes and existing AP regressions",
+    "Funke configuration identity and real MongoDB/Daisy/Funke pipeline for both formats",
+    "agglomerate final-stage failure rollback/retry; mismatched dense-base provenance rejected",
+    "Slurm federated cluster arguments with mocked commands in a PTY",
+    "authenticated external MongoDB is never shut down",
+    "asymmetric HDF5 fallback and all six NML/CSV permutations",
+    "NML groups and branchpoints remapped",
+    "publication locks reject competing publishers"
+  ],
+  "limits": [
+    "No production GPU training/inference or live cross-node Slurm jobs were run",
+    "Distributed authenticated MongoDB integration tested with mocks; local real MongoDB pipeline was executed",
+    "Filesystem revision checks detect ordinary source modifications; immutable snapshots remain recommended",
+    "Python exceptions roll back directory publication; abrupt termination/power loss and cross-filesystem global atomicity are not claimed",
+    "Large NMS plateaus can expand read windows and require extra memory"
+  ],
+  "final_sparse_evaluation_recheck": {
+    "tests": 87,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": 11.368
+  },
+  "hdf5_and_zarr_compatibility_recheck": {
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": 6.455
+  }
+}

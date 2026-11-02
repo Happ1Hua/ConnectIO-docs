@@ -1,13 +1,63 @@
 ---
 layout: default
-title: Slurm execution
+title: Local and Slurm execution
 lang: en
 permalink: /en/slurm/
 ---
 
-# Slurm execution
+# Local and Slurm execution
 
-Public compute functions accept keyword-only `slurm=True` and `slurm_options=None`. The default call submits asynchronously; inside an existing allocation it executes directly, preventing nested submissions.
+Compute entry points accept `backend="local"` or `backend="slurm"`; `slurm=False/True` remains supported. With neither specified, calls inherit the enclosing execution context or `CONNECTIO_EXECUTION_BACKEND`, falling back to Slurm. Slurm mode executes directly inside an allocation to avoid nested submissions. Submission failures never fall back to local computation.
+
+## Deployment without a cluster
+
+Install the dependencies for your workflows in a Linux workstation environment and select local execution once:
+
+```bash
+pip install -e .
+# Select the extras needed for your workflows, for example:
+pip install -e '.[segmentation,mito-pytorch,synful-pytorch]'
+export CONNECTIO_EXECUTION_BACKEND=local
+
+connectio-lsd-predict /data/inference.json --device cuda
+connectio-mito predict --config /data/mito.json --device cuda
+connectio-synful predict --config /data/synful.json --device cuda
+```
+
+Local execution needs neither `sbatch`, an allocation, nor cluster-specific Conda paths. It uses the current interpreter, waits for completion, and propagates exceptions. CUDA execution still needs a working PyTorch/CUDA environment; choose `--device cpu` for CPU execution. `slurm_options` has no effect locally and imposes no resource limits. Configure worker counts, threads, batches, and memory budgets through the workflow's own settings.
+
+Use `--backend local` (alias `--no-slurm`) or `--backend slurm` (alias `--slurm`) to override the environment for one call. Python has the same selection:
+
+```python
+from connectio.processing import crop_zarr
+crop_zarr('raw.zarr', 'crop.zarr', dataset_path='volumes/raw',
+          crop_bbox_xyz=((0, 64), (0, 64), (0, 64)), backend='local')
+```
+
+Local calls return the result directly, without a `SlurmJob` or a `.result()` step. `slurm=None` means inherit the selection. Conflicting `backend` and `slurm` arguments raise an error.
+
+## Workflow coverage and internal workers
+
+Conversion, preprocessing, alignment, LSD training/prediction/evaluation, Mito, Synful, model configuration/preflight, segmentation stages, and viewer launchers support backend selection. Mito and Synful CLIs now use the common default too; add `--no-slurm` or select global local execution for previously synchronous scripts.
+
+```bash
+connectio-segmentation-stage over-segmentation configs/03.json --backend local
+connectio-segmentation-stage agglomeration configs/04.json --backend local
+connectio-segmentation-stage lut configs/05.json --backend local
+connectio-segmentation-stage segmentation configs/06.json --backend local
+```
+
+Finish and review each stage before starting the next. Local stages also write `<run_dir>/<stage>/status.json`, including `backend`, nullable `job_id`, and completion/failure state. An affinity stage config can select `"device":"cpu"`; its default remains `cuda`.
+
+Funke post-processing requires the legacy Daisy, lsds, waterz, and funlib stack described in `requirements-segmentation.txt`, plus MongoDB. Installing an extra does not install those legacy dependencies or the MongoDB executable. Set `CONNECTIO_MONGOD=/path/to/mongod` or put `mongod` on PATH; `_connectio.mongod` takes precedence. Reuse `db_name` and `_connectio.mongodb_dir` across consecutive stages.
+
+Fragment and agglomeration workers inherit the stage backend. Local workers use the current Python interpreter and inherit the Daisy context; `num_workers` controls concurrency and `queue` is ignored locally. Slurm workers use the common submitter: `queue` chooses their partition and `_connectio.worker_slurm_options` overrides resources, interpreter, or Conda environment. Set `_connectio.worker_backend="local"` to keep workers within one allocation; Daisy and MongoDB then use local addresses. Worker logs remain in `.extract_fragments_blockwise/` and `.agglomerate_blockwise/`.
+
+`connectio-view --backend local --viewer-type zarr --zarr-path /data/raw.zarr --datasets volumes/raw` starts a viewer from the installed package. In Slurm mode, `--login-host` and `--local-port` enable SSH tunnel instructions. Interactive `launch_neuroglancer` follows logs and cancels its job on exit; `wait=False` returns a `SlurmJob` for caller management. Low-level `view_*` functions still create local viewer objects directly.
+
+Undecorated Python functions can use `connectio.execution.run_function(module, function, args=(), kwargs=None, backend=..., resource="cpu")`. Its generic CLI is `connectio-run module:function --args '[]' --kwargs '{}' --backend local`, also available as `python -m connectio.execution`. Historical repository scripts named `submit_*.sh` or ending in `.slurm` remain Slurm-specific; use the Python/CLI entry points above for local deployment.
+
+## Slurm default resources
 
 | Setting | CPU default | GPU default |
 |---|---|---|
@@ -47,7 +97,7 @@ Options use Python underscores or Slurm hyphens. `account`, `qos`, `constraint`,
 
 Every job directory stores the payload, generated script, submission record, state, logs, and serialized result. Arguments and results use private pickle files and must come from trusted local code. Large arrays should remain in shared storage and be passed by path.
 
-CLI programs expose `--slurm-options '{...}'`. `--no-slurm` is for an allocated compute node only. Help and dry-run operations stay local. Neuroglancer launchers and existing site-specific Slurm scripts keep their own submission behavior.
+CLI programs expose `--slurm-options '{...}'`. `--no-slurm` works on a standalone workstation or within an allocation. Help and dry-run operations stay local.
 
 ## Submission, execution, and results
 
@@ -84,4 +134,11 @@ Resource alternatives such as `mem_per_cpu` remove the default `mem` flag unless
 
 Slurm dependencies can be passed as an option, for example `"dependency":"afterok:JOB_ID"` after replacing `JOB_ID` with a real submitted job number. Use dependencies for mechanical prerequisites. The segmentation workflow deliberately stops at review gates, so a dependency should not silently authorize a downstream scientific stage.
 
-`--no-slurm` and Python `slurm=False` run the work in the current process. Use them only after acquiring the intended compute allocation. `--help` stays local; `connectio-segmentation-stage --dry-run` prints its plan without submitting. A Neuroglancer viewer has a separate interactive launcher and ends its own Slurm job when the launcher exits; see [modules and tutorials]({{ "/en/modules/" | relative_url }}).
+`--no-slurm` and Python `slurm=False` run the work in the current process. Workstations need no allocation; on a cluster, follow the site's compute-node policy. `--help` stays local; `connectio-segmentation-stage --dry-run` prints the selected backend and plan without submitting. See [modules and tutorials]({{ "/en/modules/" | relative_url }}).
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).
+
+From 26.11.02, distributed Funke workers require an authenticated external MongoDB through `_connectio.mongodb_uri`, `CONNECTIO_MONGODB_URI`, or credential-bearing `db_host`. Automatic MongoDB is loopback-only for local workers. See [migration notes]({{ "/en/audit/" | relative_url }}).

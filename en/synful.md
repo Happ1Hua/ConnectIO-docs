@@ -7,6 +7,8 @@ permalink: /en/synful/
 
 # Synful PyTorch: synapse partner detection
 
+This CLI uses the common execution policy: `--backend local` runs on a workstation and `--backend slurm` submits a job. Set `export CONNECTIO_EXECUTION_BACKEND=local` to run the commands below locally by default. Otherwise Slurm is the default; help never submits. See [local and Slurm execution]({{ "/en/slurm/" | relative_url }}).
+
 ConnectIO provides the PyTorch Synful pipeline as `connectio.synapse_detection.synful_pytorch`, under its own `synapse_detection` package rather than `segmentation`. It predicts a postsynaptic indicator and a partner displacement vector, extracts candidate pre/post pairs, and exports CSV and WEBKNOSSOS NML skeletons. The package also provides training, checkpoint validation, TensorFlow NPZ weight conversion, optional segmentation filtering, and blockwise NMS utilities.
 
 This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentation/" | relative_url }}). The two workflows may share the same raw and neuron segmentation volumes, but Synful uses its own configuration, checkpoints, and output directory. Original Synful experiment data is not bundled with the source. The complete paired checkpoint is hosted in the currently private [ConnectIO-Synful on Hugging Face](https://huggingface.co/happyhua1/ConnectIO-Synful); see [model downloads]({{ "/en/models/" | relative_url }}) for revision-pinned downloads, verification and the matching `model` configuration. The exported checkpoint supports inference or `--init-checkpoint`, not exact training `--resume`.
@@ -179,10 +181,15 @@ Legacy TensorFlow weights exported to NPZ can be converted with `connectio-synfu
 
 ## 9. Reproduce the real-data integration test
 
-The [numbered test scripts](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-real-data-tests/tests/synful_real) run preflight and `inspect`, two short fine-tuning steps with resume, partial and resumed raw-Zarr inference, extraction, segmentation-filtered CSV/NML export, held-out validation, and a final artifact check. Inputs are opened read-only; local data, logs, checkpoints, and predictions stay in the Git-ignored `tests/workspaces/synful_real/` directory. The scripts require an accessible annotated HDF5, raw/segmentation Zarr, and compatible paired checkpoint; they do not download or publish those datasets. Use a Slurm compute allocation for training and inference.
+The [numbered test scripts](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-real-data-tests/tests/synful_real) run preflight and `inspect`, two short fine-tuning steps with resume, partial and resumed raw-Zarr inference, extraction, segmentation-filtered CSV/NML export, held-out validation, and a final artifact check. Inputs are opened read-only; local data, logs, checkpoints, and predictions stay in the Git-ignored `tests/workspaces/synful_real/` directory. The scripts require an accessible annotated HDF5, raw/segmentation Zarr, and compatible paired checkpoint; they do not download or publish those datasets. Use local workstation execution or a Slurm allocation for training and inference.
 
 The [recorded E1Sp5D3 run](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md) used two deliberately small, independently selected real ROIs. The full-raw positive-control ROI yielded 7 candidates, 6 after segmentation filtering. The GT contained 274 pairs overall; its chosen validation ROI contained 5. After two fine-tuning steps, validation gave TP=1, FP=0, FN=4 (F1≈0.333). That validation candidate produced a nonempty unfiltered NML (one tree, two nodes, one edge), but the optional neuron-segmentation filter rejected it. The original indicator/vector TensorFlow NPZ files also converted successfully: all 38 tensors per model matched the corresponding paired-checkpoint tensors exactly. The GT-crop-to-full-raw coordinate transform is not established, and the historical checkpoint may overlap the GT region. These are functional test observations, **not** an independent or full-volume accuracy estimate or biological acceptance of candidates.
 
 The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json) accompany this guide.
 
 See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).

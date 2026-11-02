@@ -7,9 +7,11 @@ permalink: /en/
 
 # ConnectIO
 
-ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.10.13** adds local model configuration, automatic checkpoint parameter validation and GT-free inference preflight, alongside reproducible training and bounded volume processing.
+ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.11.02** hardens file replacement, checkpoint loading and resume integrity across Zarr2/Zarr3 workflows. See the [review repair record]({{ "/en/audit/" | relative_url }}). See [Zarr2/Zarr3 compatibility]({{ "/en/zarr/" | relative_url }}).
 
 ## Documentation
+
+- [Mito PyTorch]({{ "/en/mito/" | relative_url }}): native model, two-GT checkpoint, JSON configuration, training and instance segmentation.
 
 - [Model downloads]({{ "/en/models/" | relative_url }}): local config generation, automatic parameter validation, GT-free preflight and private model access.
 

@@ -9,7 +9,11 @@ permalink: /zh/getting-started/
 
 推理前可用本地 checkpoint 生成匹配配置并做无需 GT 的预检；模型仓库当前为 private，说明见[模型下载]({{ "/zh/models/" | relative_url }})。
 
-## 环境
+## 本地部署
+
+非集群 Linux 用户可在自己的 Python 环境安装所需依赖，然后设置 `export CONNECTIO_EXECUTION_BACKEND=local`。本页后续 CLI 会同步在本机执行；单次使用 `--backend slurm` 可提交集群。无需使用下表中的站点环境名或分区。完整配置、MongoDB 与内部 worker 说明见[本地与 Slurm 执行]({{ "/zh/slurm/" | relative_url }})。
+
+## 集群环境示例
 
 | 工作 | Conda 环境 | 默认分区 |
 |---|---|---|
@@ -29,7 +33,7 @@ pip install -e . --no-deps
 
 也可使用 `pip install -e ".[segmentation]"`。Funke 后处理还需要旧版 `lsds 0.1`、`waterz 0.9.6`、`daisy 0.2`、`funlib.segment 0.1` 和 `funlib.persistence 0.1.0`。当前集群可用 `connectio/segmentation/scripts/activate_env.sh` 加载已验证的旧版依赖。
 
-Synful 突触配对检测使用独立的 `synful-pytorch` extra 和 `connectio-synful` 命令。所需分支、输入格式、配置、命令与坐标检查见[详细的 Synful PyTorch 指南]({{ "/zh/synful/" | relative_url }})。Synful 计算命令在当前进程运行；正式训练或全体积推理前请先申请计算资源。
+Synful 突触配对检测使用独立的 `synful-pytorch` extra 和 `connectio-synful` 命令。所需分支、输入格式、配置、命令与坐标检查见[详细的 Synful PyTorch 指南]({{ "/zh/synful/" | relative_url }})。Synful 与其他入口共用执行策略：`--backend local` 在当前进程运行，`--backend slurm` 提交作业。
 
 ## 首次提交
 
@@ -55,7 +59,7 @@ job = submit_stage(
 print(job.job_id, job.stdout, job.stderr)
 ```
 
-程序可使用 `job.status()`、`job.result(timeout=...)` 和 `job.cancel()`。`slurm=False` 只允许在已有 Slurm allocation 的计算节点使用。
+程序可使用 `job.status()`、`job.result(timeout=...)` 和 `job.cancel()`。`slurm=False` 或 `backend="local"` 可在独立工作站运行，同步返回结果，无需 allocation。
 
 ## 首次运行前
 
@@ -89,3 +93,12 @@ connectio-segmentation-stage affinity configs/02_affinity.json \
 已有合适 raw Zarr 时不必重做转换与对齐；有 raw 和匹配 checkpoint 可从 affinity 开始；再往后则需要对应的 affinity、fragments、LUT 和持久化图数据库。新建 `run_dir` 只会保存新的状态文件，不会生成缺失的科学输入。作业仍运行时，不要让两个独立实验写入同一输出 dataset 或 MongoDB 数据库目录。
 
 某阶段失败后先检查 `status.json` 和 Slurm `stderr.log`，再修改配置。重新运行前确认部分输出是否可续跑；科学设置变更时使用新输出路径。流程不会自动提交下一阶段。
+
+## 原生线粒体分割
+
+在 PyTorch 环境中安装 `requirements-mito.txt`，再执行 `pip install -e . --no-deps`。配置与计算资源用法见 [Mito]({{ "/zh/mito/" | relative_url }})。
+
+
+## Zarr2 / Zarr3（26.10.28）
+
+体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。

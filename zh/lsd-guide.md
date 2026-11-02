@@ -47,13 +47,13 @@ connectio-segmentation-stage segmentation configs/06_segmentation.json
 
 每个阶段都应等待结果、审查并确认后才提交下一个。过分割从已接受的 affinity 产生 fragments，需检查与 raw 的边界贴合和 block 拼缝。Agglomeration 给持久化区域邻接图的边打分；LUT 将不同阈值下的 fragments 映射到合并组件；标准最后阶段按选定的 `threshold` 写出标签体。标签体是新的结果，不应覆盖 fragments。
 
-过分割、agglomeration 和 LUT 阶段各自在运行时启动 MongoDB，结束后停止服务。三个阶段必须使用**相同** `db_name` 与 `_connectio.mongodb_dir` 以保留数据文件，且不能并发访问同一个目录。`edges_collection` 要对应 merge function，例如模板中的 `hist_quant_75` 与 `edges_hist_quant_75`。仅保留 `status.json` 而丢失数据库文件，无法恢复图状态。
+本地 worker 可启动阶段内 loopback MongoDB 并在结束时关闭。分布式 Slurm worker 通过 `_connectio.mongodb_uri`、`CONNECTIO_MONGODB_URI` 或含认证信息的 `db_host` 使用外部认证服务，ConnectIO 不会关闭外部服务。三个阶段必须使用**相同** `db_name` 与 `_connectio.mongodb_dir` 以保留数据文件，且不能并发访问同一个目录。`edges_collection` 要对应 merge function，例如模板中的 `hist_quant_75` 与 `edges_hist_quant_75`。仅保留 `status.json` 而丢失数据库文件，无法恢复图状态。
 
 阈值选择是科研判断：在有代表性的区域比较多个 LUT 阈值，分别检查错误合并和错误拆分，并记录阈值、merge function、审查区域和结论。如果模型或 affinity 改变，应使用新路径重新生成下游 fragments 和图数据，不复用旧 LUT。
 
 ## 状态、失败恢复与验证
 
-每个阶段在 `<run_dir>/<stage>/status.json` 写入 `RUNNING`、`COMPLETED` 或 `FAILED`，Slurm 作业目录另有 stdout/stderr。失败时可能留下部分 dataset 或数据库状态，应先检查错误及现存输出，再决定重试。`--no-slurm` 只适用于已经位于 Slurm allocation 内的进程，不能用于登录节点的大规模计算。后处理前须确保分割环境能访问旧版 Funke 依赖与 `mongod`。
+每个阶段在 `<run_dir>/<stage>/status.json` 写入 `RUNNING`、`COMPLETED` 或 `FAILED`，Slurm 作业目录另有 stdout/stderr。失败时可能留下部分 dataset 或数据库状态，应先检查错误及现存输出，再决定重试。`--no-slurm` 可在独立工作站或已有 allocation 内运行；集群上仍应遵守站点计算节点使用规则。后处理前须确保分割环境能访问旧版 Funke 依赖与 `mongod`。
 
 定量比较要求 GT 与结果在世界坐标中有交集：
 
@@ -83,3 +83,8 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 实际存储为 ZYX 时改为 `zyx`。显式声明与元数据冲突会报错；轴不一致时先转换再评估。缺少 `resolution`、非法几何、单位不同或存在非整数体素偏移时拒绝计算，不静默取整。
 
 2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。
+
+
+## Zarr2 / Zarr3（26.10.28）
+
+体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。

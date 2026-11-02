@@ -7,6 +7,32 @@ permalink: /en/changelog/
 
 # Changelog
 
+## 26.11.02 — 2026-11-02
+
+- Fix unsafe file replacement, checkpoint loading, process ownership and resume integrity across Zarr2/Zarr3.
+- Bind Funke state to input/config identity; restrict automatic MongoDB to loopback and redact credentials.
+- Fix cross-block NMS plateaus, sparse instance evaluation, image validation, metadata and NML merge references.
+- See the [review repair record]({{ "/en/audit/" | relative_url }}) for migration notes, validation and limitations.
+
+## 26.10.28 — 2026-10-28
+
+- Add shared Zarr2/Zarr3 I/O across conversion, processing, model workflows and Neuroglancer.
+- Preserve WEBKNOSSOS ROI, axes, scales and segmentation IDs; retain native Zarr2 defaults.
+- Add explicit output selection, configurable LSD training datasets and dual-format regression tests.
+- Include local/Slurm execution updates and synchronize README, examples and bilingual documentation.
+
+## 26.10.23 — 2026-10-23
+
+- Mito reads XYZ/ZYX Zarr through blockwise ZYX views and restores original input axes in native-grid exports.
+- Validate all axis metadata declarations and explicit settings; reorder physical coordinates together with pixels. Missing axes require an explicit configuration.
+- Training and evaluation support mixed stored axes; model weights are unchanged.
+
+## 26.10.22 — 2026-10-22
+
+- Native PyTorch residual-SE U-Net+ mitochondrial segmentation, strict checkpoint conversion, and `connectio-mito`.
+- `mito-joint` model configure/inspect, paired multi-volume training, Zarr resampling, tiled prediction, global BC watershed and native-grid export.
+- Migrated selected two-GT step-2000 weights with SHA256, selection provenance and a local Hugging Face upload bundle; bilingual documentation updated.
+
 ## 26.10.13 — 2026-10-13
 
 - Added local inference config generation for Spider, DigSpider, joint LSD/ACRLSD and paired Synful bundles.

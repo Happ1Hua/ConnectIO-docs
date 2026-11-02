@@ -9,7 +9,11 @@ permalink: /en/getting-started/
 
 Generate matching configs from local checkpoints and inspect inference without GT; model repositories are currently private. The [model downloads]({{ "/en/models/" | relative_url }}) covers revisions, checksums and matching network configuration.
 
-## Environments
+## Local deployment
+
+On a Linux workstation, install the required dependencies in your Python environment and set `export CONNECTIO_EXECUTION_BACKEND=local`. The commands below will then run synchronously on that machine; use `--backend slurm` to submit a particular call. The site environment names and partitions below are optional cluster examples. See [local and Slurm execution]({{ "/en/slurm/" | relative_url }}) for MongoDB and worker configuration.
+
+## Cluster environment examples
 
 The cluster workflow uses two Conda environments:
 
@@ -31,7 +35,7 @@ pip install -e . --no-deps
 
 The segmentation extra is also available as `pip install -e ".[segmentation]"`. The legacy Funke post-processing stack (`lsds 0.1`, `waterz 0.9.6`, `daisy 0.2`, `funlib.segment 0.1`, `funlib.persistence 0.1.0`) must be installed in the segmentation environment. On the current cluster, `connectio/segmentation/scripts/activate_env.sh` exposes the verified legacy packages.
 
-Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for installation, input requirements, configuration, commands, and coordinate checks. Synful compute commands run in the current process, so allocate compute resources before training or full-volume inference.
+Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for installation, input requirements, configuration, commands, and coordinate checks. Synful shares the common execution policy: `--backend local` runs in the current process and `--backend slurm` submits a job.
 
 ## First stage submission
 
@@ -57,7 +61,7 @@ job = submit_stage(
 print(job.job_id, job.stdout, job.stderr)
 ```
 
-Use `job.status()`, `job.result(timeout=...)`, or `job.cancel()` when programmatic control is needed. `slurm=False` is only accepted for work already running inside a Slurm allocation.
+Use `job.status()`, `job.result(timeout=...)`, or `job.cancel()` when programmatic control is needed. `slurm=False` or `backend="local"` runs synchronously on a standalone workstation without an allocation.
 
 ## Before the first run
 
@@ -91,3 +95,12 @@ The second command submits and returns. Find the job ID and log directory in its
 You do not need to rerun conversion or alignment when a suitable raw Zarr already exists. You can start at affinity with raw and compatible checkpoints, or at a later stage when its required affinities, fragments, lookup tables, and persistent graph state already exist. A new `run_dir` stores new status files; it does not recreate missing scientific inputs. Do not point independent runs at the same output dataset or MongoDB database directory while jobs are active.
 
 If a stage fails, inspect both its `status.json` and the Slurm `stderr.log` before editing the configuration. Re-run the same stage only after confirming whether partial output can be resumed; use a new output path for a scientifically different run. The workflow does not automatically advance to the next stage.
+
+## Native mitochondrial segmentation
+
+Install `requirements-mito.txt` in a PyTorch environment, then `pip install -e . --no-deps`. See [Mito]({{ "/en/mito/" | relative_url }}) for configuration and compute allocation.
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).

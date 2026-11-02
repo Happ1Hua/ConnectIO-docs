@@ -7,9 +7,11 @@ permalink: /zh/
 
 # ConnectIO
 
-ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.10.13** 版本增加本地模型配置生成、checkpoint 参数自动校验和无需 GT 的推理预检，并保留可复现训练与有界体数据处理能力。
+ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.11.02** 修复双格式流程中的文件覆盖、检查点加载及续跑完整性问题。详见[审查修复记录]({{ "/zh/audit/" | relative_url }}）。详见 [Zarr2/Zarr3 兼容说明]({{ "/zh/zarr/" | relative_url }}）。
 
 ## 文档
+
+- [Mito PyTorch 线粒体分割]({{ "/zh/mito/" | relative_url }})：原生网络、双 GT 权重、JSON 配置、训练与实例分割。
 
 - [模型下载]({{ "/zh/models/" | relative_url }}): 本地模型配置生成、自动参数校验、无需 GT 的预检及私有权重访问。
 

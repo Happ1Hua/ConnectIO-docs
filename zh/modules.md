@@ -93,3 +93,12 @@ connectio-align --input clahe/tiffs --output aligned --method phase
 | Skeleton 标注 | `merge_nmls.py` |
 
 部分示例含站点专用数据路径和资源值，应先改成自己的工作区，再检查提交记录和输出。[Slurm 执行]({{ "/zh/slurm/" | relative_url }})解释通用提交选项。
+
+## Mito PyTorch
+
+`connectio.mito_segmentation.mito_pytorch` · `connectio-mito` · [Guide]({{ "/zh/mito/" | relative_url }})
+
+
+## Zarr2 / Zarr3（26.10.28）
+
+体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。

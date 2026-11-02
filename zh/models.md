@@ -7,7 +7,7 @@ permalink: /zh/models/
 
 # 模型配置与无需 GT 的推理预检
 
-ConnectIO 26.10.13 支持从本地 checkpoint 自动生成推理配置，并在推理前检查网络参数、输入尺寸和坐标，无需 ground truth（GT）。更新安装后可使用 `connectio-models`；也可用 `python -m connectio.models` 替代该命令。
+ConnectIO 26.11.02 支持从本地 checkpoint 自动生成推理配置，并在推理前检查网络参数、输入尺寸和坐标，无需 ground truth（GT）。更新安装后可使用 `connectio-models`；也可用 `python -m connectio.models` 替代该命令。
 
 在源码目录更新安装（PyTorch 构建需与计算环境相容）：
 
@@ -92,3 +92,7 @@ hf download happyhua1/ConnectIO-Synful --revision 14f3f7eff804d1d63c53e988e5f08e
 示例固定到此前核对过的模型 revision；授权用户更新权重时应保存新 revision 与 manifest。7 个文件合计约 2.39 GB。`upload_sha256`、`upload_bytes` 对应下载文件，`source_sha256` 是导出前文件的身份，不能用来校验导出文件。Hub 权重与历史本地 Spider manifest 的文件名、哈希不同。
 
 导出权重用于推理或新目录下的 `--init-checkpoint` 初始化，不含精确训练 `--resume` 所需的优化器、RNG 和采样进度。权重来源及科学使用限制见模型卡；当前源码可访问不意味着私有权重已经公开。
+
+## Mito 双 GT 联合模型
+
+`mito-joint` 使用 `joint/spider_fibsem_mito_v1.pt`，来自 digspider + E1Sp5D3 联合训练选出的 checkpoint，已转换为原生 PyTorch 模型，模型网格为 ZYX 30×8×8 nm。参见 [Mito 配置、迁移与上传说明]({{ "/zh/mito/" | relative_url }})。小型转换权重随 GitHub 源码和 wheel 分发，位于 `connectio/mito_segmentation/models/joint/`；可选 Hub 镜像包已准备，未上传。

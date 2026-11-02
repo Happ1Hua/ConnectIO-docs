@@ -7,7 +7,7 @@ permalink: /en/models/
 
 # Model configuration and GT-free inference preflight
 
-ConnectIO 26.10.13 generates inference configs from local checkpoints and checks model parameters, tile geometry and coordinates without ground truth (GT). Update your installation to obtain `connectio-models`, or use `python -m connectio.models` instead.
+ConnectIO 26.11.02 generates inference configs from local checkpoints and checks model parameters, tile geometry and coordinates without ground truth (GT). Update your installation to obtain `connectio-models`, or use `python -m connectio.models` instead.
 
 Update the installation from the source directory, using a PyTorch build compatible with the compute environment:
 
@@ -92,3 +92,7 @@ hf download happyhua1/ConnectIO-Synful --revision 14f3f7eff804d1d63c53e988e5f08e
 The commands pin previously verified revisions. Record the new revision and manifest when updating authorized weights. The seven files total approximately 2.39 GB. `upload_sha256`/`upload_bytes` identify downloads; `source_sha256` identifies the original pre-export file. Hub filenames and hashes differ from historical local Spider manifests.
 
 Exports support inference or `--init-checkpoint` initialization in a new directory. They lack optimizer/RNG/sampler state for exact training `--resume`. Model cards document available provenance and scientific limits. Source-code availability does not make private weights publicly available.
+
+## Mito two-GT checkpoint
+
+The `mito-joint` bundle uses `joint/spider_fibsem_mito_v1.pt`. It is a native PyTorch model converted from the selected digspider + E1Sp5D3 checkpoint, with 30×8×8 nm ZYX model voxels. See [Mito setup, configuration and upload instructions]({{ "/en/mito/" | relative_url }}). The small converted model is included in the GitHub checkout and wheel under `connectio/mito_segmentation/models/joint/`; an optional Hub mirror package is prepared locally.

@@ -1,0 +1,136 @@
+{
+  "version": "26.10.28",
+  "date": "2026-10-28",
+  "python": "3.10.16",
+  "dependencies": {
+    "numpy": "1.26.4",
+    "zarr": "2.18.3",
+    "tensorstore": "0.1.78",
+    "torch": "2.7.0",
+    "daisy": "0.2",
+    "lsds": "0.1",
+    "webknossos": "2.0.7",
+    "cloud-volume": "12.15.2"
+  },
+  "full_suite": {
+    "command": "MKL_THREADING_LAYER=GNU CONNECTIO_RUN_FUNKE_SMOKE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 CUDA_VISIBLE_DEVICES= python -m pytest tests -q",
+    "tests": 343,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 107.849
+  },
+  "real_webknossos_demo": {
+    "source": "AL_L_24x16x10um_MaleCNS",
+    "samples": [
+      {
+        "dataset": "color/1",
+        "shape": [
+          3000,
+          2000,
+          1250
+        ],
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ],
+        "resolution": [
+          8.0,
+          8.0,
+          8.0
+        ],
+        "offset": [
+          429344.0,
+          209088.0,
+          114808.0
+        ],
+        "sample_sum": 1512,
+        "dtype": "uint8"
+      },
+      {
+        "dataset": "color/64",
+        "shape": [
+          48,
+          32,
+          20
+        ],
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ],
+        "resolution": [
+          512.0,
+          512.0,
+          512.0
+        ],
+        "offset": [
+          429056.0,
+          208896.0,
+          114688.0
+        ],
+        "sample_sum": 347,
+        "dtype": "uint8"
+      },
+      {
+        "dataset": "segmentation/64",
+        "shape": [
+          48,
+          32,
+          20
+        ],
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ],
+        "resolution": [
+          512.0,
+          512.0,
+          512.0
+        ],
+        "offset": [
+          429056.0,
+          208896.0,
+          114688.0
+        ],
+        "sample_sum": 16524,
+        "dtype": "uint64"
+      }
+    ],
+    "crop_parity": {
+      "zarr2": true,
+      "zarr3": true
+    }
+  },
+  "coverage": [
+    "Neuroglancer source/overlay/precomputed coordinates and pixels",
+    "PNG/TIFF/3D TIFF/hyperstack/HDF5/precomputed/WKW conversion",
+    "TXM storage path using mocked decoded slices",
+    "crop/resample/rotate and uint64 label preservation",
+    "LSD/ACRLSD data sampling/inference/evaluation/resume",
+    "Mito training/inference/postprocessing/evaluation axes matrix",
+    "Synful prediction/resume, missing-chunk integrity and batching",
+    "real MongoDB/Daisy watershed/agglomeration/LUT/segmentation for both formats",
+    "local and mocked Slurm submission contracts",
+    "bilingual documentation and generated README"
+  ],
+  "limitations": [
+    "CPU regression and tiny synthetic model/postprocess volumes; no full-volume GPU retraining or performance claim",
+    "Slurm submission tested with mocks; no production cluster jobs submitted in this release validation",
+    "TXM decoder/storage integration uses synthetic decoded slices; no new real TXM or WKW annotation archive supplied",
+    "Private LSD/Synful checkpoints are optional external downloads, not bundled or required by the test suite"
+  ],
+  "final_changed_area_recheck": {
+    "tests": "54",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "14.558"
+  },
+  "fast_checks": {
+    "passed": 33
+  },
+  "packaging": "Successfully built connectio-26.10.28.tar.gz"
+}

@@ -93,3 +93,8 @@ The example paths are placeholders. `mode="small"` uses full XY slabs with paral
 Before deleting or replacing a source, compare a small set of exact voxel coordinates and at least one full slice; check shape, dtype, channel count, `resolution`, and `offset`. A visually plausible XY view can still hide a reversed Z order or swapped axes. If a conversion stops partway through, inspect whether the output store is incomplete; select a fresh destination for a clean rerun unless the particular converter documents restart behavior.
 
 See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).

@@ -47,13 +47,13 @@ connectio-segmentation-stage segmentation configs/06_segmentation.json
 
 Wait for, inspect, and approve each stage before issuing the next command. Over-segmentation creates fragments from the accepted affinities. Compare fragment boundaries to raw and inspect block borders. Agglomeration scores edges in a persistent region-adjacency graph. LUT generation uses that graph to map fragments to merged components at threshold candidates. The standard final stage materializes a label volume for a selected `threshold`. Its output is a new data product, not a replacement for fragments.
 
-Over-segmentation, agglomeration, and LUT generation each start a stage-local MongoDB process and stop it after that stage. Persist the files by using the **same** `db_name` and `_connectio.mongodb_dir`; do not run two stages simultaneously against that directory. `edges_collection` must agree with the merge function, for example `hist_quant_75` and `edges_hist_quant_75` in the supplied examples. Losing the database files cannot be fixed by retaining only the final JSON status files.
+Local workers can start a stage-local loopback MongoDB process and stop it after the stage. Distributed Slurm workers require an authenticated external service through `_connectio.mongodb_uri`, `CONNECTIO_MONGODB_URI`, or a credential-bearing `db_host`; external services are never shut down by ConnectIO. Persist the files by using the **same** `db_name` and `_connectio.mongodb_dir`; do not run two stages simultaneously against that directory. `edges_collection` must agree with the merge function, for example `hist_quant_75` and `edges_hist_quant_75` in the supplied examples. Losing the database files cannot be fixed by retaining only the final JSON status files.
 
 Threshold choice is a scientific decision. Review representative crops at several LUT thresholds, checking both false merges and false splits. Save the chosen threshold, merge function, region reviewed, and reviewer note with the run. If an affinity or model changes, regenerate downstream fragments and graph products under new paths instead of reusing an old LUT.
 
 ## Status, failure, and validation
 
-Every stage writes `<run_dir>/<stage>/status.json` with `RUNNING`, `COMPLETED`, or `FAILED`. The Slurm job directory separately contains stdout and stderr logs. A failure may leave partial datasets or graph state; inspect the error and existing output before retrying. `--no-slurm` is for a process already inside a Slurm allocation, not for heavy work on a login node. If the legacy Funke stack or `mongod` is unavailable, install or expose it in the segmentation environment before post-processing.
+Every stage writes `<run_dir>/<stage>/status.json` with `RUNNING`, `COMPLETED`, or `FAILED`. The Slurm job directory separately contains stdout and stderr logs. A failure may leave partial datasets or graph state; inspect the error and existing output before retrying. `--no-slurm` runs on a standalone workstation or within an allocation; follow compute-node policy when using a cluster. If the legacy Funke stack or `mongod` is unavailable, install or expose it in the segmentation environment before post-processing.
 
 For quantitative comparison, use ground truth and result datasets whose world-coordinate extents overlap:
 
@@ -83,3 +83,8 @@ connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
 Use `zyx` instead when that is the actual order. Contradictory declarations are rejected; convert mismatched inputs before evaluation. Missing `resolution`, invalid geometry, differing units, or fractional-voxel shifts cause an error rather than a silently rounded score.
 
 See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).

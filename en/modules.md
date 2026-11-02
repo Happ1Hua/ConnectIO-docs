@@ -93,3 +93,12 @@ For large Zarr data, leave lazy viewing enabled unless the selected data can fit
 | Skeleton annotations | `merge_nmls.py` |
 
 Several examples contain site-specific data paths and resource values. Treat them as editable templates, then inspect the submitted job record and output. [Slurm execution]({{ "/en/slurm/" | relative_url }}) explains the common submission controls.
+
+## Mito PyTorch
+
+`connectio.mito_segmentation.mito_pytorch` · `connectio-mito` · [Guide]({{ "/en/mito/" | relative_url }})
+
+
+## Zarr2 / Zarr3 (26.10.28)
+
+Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).
