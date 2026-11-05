@@ -7,6 +7,11 @@ permalink: /en/changelog/
 
 # Changelog
 
+## 26.11.05 — 2026-11-05
+
+- Add `--zarr-format {2,3}` to conversion/crop tutorial scripts, defaulting new tutorial outputs to Zarr3.
+- Include default/explicit-format, argument-validation and real pixel roundtrip checks; document existing-container and WEBKNOSSOS behavior.
+
 ## 26.11.02 — 2026-11-02
 
 - Fix unsafe file replacement, checkpoint loading, process ownership and resume integrity across Zarr2/Zarr3.

@@ -7,7 +7,7 @@ permalink: /zh/models/
 
 # 模型配置与无需 GT 的推理预检
 
-ConnectIO 26.11.02 支持从本地 checkpoint 自动生成推理配置，并在推理前检查网络参数、输入尺寸和坐标，无需 ground truth（GT）。更新安装后可使用 `connectio-models`；也可用 `python -m connectio.models` 替代该命令。
+ConnectIO 26.11.05 支持从本地 checkpoint 自动生成推理配置，并在推理前检查网络参数、输入尺寸和坐标，无需 ground truth（GT）。更新安装后可使用 `connectio-models`；也可用 `python -m connectio.models` 替代该命令。
 
 在源码目录更新安装（PyTorch 构建需与计算环境相容）：
 

@@ -7,7 +7,7 @@ permalink: /en/
 
 # ConnectIO
 
-ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.11.02** hardens file replacement, checkpoint loading and resume integrity across Zarr2/Zarr3 workflows. See the [review repair record]({{ "/en/audit/" | relative_url }}). See [Zarr2/Zarr3 compatibility]({{ "/en/zarr/" | relative_url }}).
+ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.11.05** adds Zarr2/Zarr3 output selection to conversion/crop tutorials, defaulting them to Zarr3, alongside the existing storage and resume protections. See the [review repair record]({{ "/en/audit/" | relative_url }}). See [Zarr2/Zarr3 compatibility]({{ "/en/zarr/" | relative_url }}).
 
 ## Documentation
 

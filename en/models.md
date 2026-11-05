@@ -7,7 +7,7 @@ permalink: /en/models/
 
 # Model configuration and GT-free inference preflight
 
-ConnectIO 26.11.02 generates inference configs from local checkpoints and checks model parameters, tile geometry and coordinates without ground truth (GT). Update your installation to obtain `connectio-models`, or use `python -m connectio.models` instead.
+ConnectIO 26.11.05 generates inference configs from local checkpoints and checks model parameters, tile geometry and coordinates without ground truth (GT). Update your installation to obtain `connectio-models`, or use `python -m connectio.models` instead.
 
 Update the installation from the source directory, using a PyTorch build compatible with the compute environment:
 

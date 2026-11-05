@@ -15,7 +15,7 @@ transpose、bytes、zstd 和校验码。不升级或全局修改第三方 Zarr�
 
 | 流程 | Zarr3 适配 | Zarr2 兼容 |
 | --- | --- | --- |
-| PNG、TIFF stack、3D TIFF、hyperstack、TXM、HDF5、WKW annotation、precomputed → Zarr | 显式选择 v3 输出 | 新输出默认仍为 v2 |
+| PNG、TIFF stack、3D TIFF、hyperstack、TXM、HDF5、WKW annotation、precomputed → Zarr | 显式选择 v3 输出 | Python API 默认 v2；教程默认 v3 |
 | Zarr → HDF5、WKW、precomputed、WEBKNOSSOS | 读取数组/层并保留声明的坐标 | 保留原有输入支持 |
 | 裁剪、旋转、上/下采样 | v3 读写；已注册 WK 数组须使用不同输出 | 保留原有处理及恢复机制 |
 | LSD/ACRLSD 训练、推理、评估、模型预检 | 统一读取、v3 预测输出、可配置训练数组路径 | 保留默认路径与 v2 输出 |
@@ -43,6 +43,26 @@ tiff_stack_to_zarr("input-tiffs", "new-output.zarr", zarr_format=3, backend="loc
 新 v3 输出是普通数值型 Zarr3 数组，**不会自动注册为 WEBKNOSSOS dataset**。
 需要 `datasource-properties.json`、倍率与 attachments 时，继续使用 WEBKNOSSOS
 导出阶段。已有 `zarr2_to_zarr3` API 名称保留，也可以重新导出 v3 源数组。
+
+## 教程输出格式（26.11.05）
+
+`tiff_to_zarr.py`、`png_stack_to_zarr.py`、`txm_to_zarr.py`、`hdf5_to_zarr.py`、
+`wkw_to_zarr.py`、`precomputed_to_zarr.py` 和 `crop_zarr.py` 支持
+`--zarr-format {2,3}`，新输出默认 **Zarr3**。先修改脚本中的示例输入与输出路径。
+脚本顶部的 `ZARR_FORMAT = 3` 控制默认值，命令行指定值优先。
+
+```bash
+export CONNECTIO_EXECUTION_BACKEND=local
+python tutorials/tiff_to_zarr.py                  # 默认 Zarr3
+python tutorials/tiff_to_zarr.py --zarr-format 2  # Zarr2
+```
+
+Python API 新建存储的默认值仍为 Zarr2；上述默认 Zarr3 仅适用于这七个教程。
+追加到已有容器时格式必须匹配，切换格式需使用新输出目录。旋转和重采样教程继承
+现有容器的格式。专用 WEBKNOSSOS 导出固定为 Zarr3，倍率脚本处理现有 dataset；
+HDF5/WKW/precomputed 导出及可视化脚本使用其各自格式。
+
+测试结果见[教程格式验证记录]({{ "/validation/tutorial-formats-26.11.05.json" | relative_url }})。
 
 ## WEBKNOSSOS 输入与坐标
 

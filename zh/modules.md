@@ -25,6 +25,8 @@ Neuroglancer 脚本是手动 Slurm 查看入口。设置 Zarr path 和 dataset �
 
 ## 教程索引
 
+转换与裁剪教程支持 `--zarr-format 2` 或 `3`，默认输出 Zarr3；详见[教程格式选项]({{ "/zh/zarr/" | relative_url }})。
+
 `tutorials/` 提供 TIFF/PNG/TXM 到 Zarr、HDF5/WKW 互转、precomputed 转换、裁剪、重采样、旋转、NML 合并、TIFF 预处理、TIFF 对齐、LSD 推理和 Neuroglancer 查看示例。每个计算示例设置 `SLURM_OPTIONS`，调用真实 ConnectIO 函数并打印作业信息。两个操作写入同一 Zarr 时应设置 `afterok` 依赖。
 
 登录节点也可只按模块和函数名提交，无需导入影像依赖：

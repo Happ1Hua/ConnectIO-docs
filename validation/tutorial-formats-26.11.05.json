@@ -1,0 +1,41 @@
+{
+  "version": "26.11.05",
+  "date": "2026-11-05",
+  "tutorial_default": 3,
+  "supported_formats": [
+    2,
+    3
+  ],
+  "scripts": [
+    "tiff_to_zarr.py",
+    "png_stack_to_zarr.py",
+    "txm_to_zarr.py",
+    "hdf5_to_zarr.py",
+    "wkw_to_zarr.py",
+    "precomputed_to_zarr.py",
+    "crop_zarr.py"
+  ],
+  "workflow_and_tutorial_tests": {
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "command": "MKL_THREADING_LAYER=GNU OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 CUDA_VISIBLE_DEVICES= python -m pytest tests/test_slurm_tutorials.py tests/test_zarr3_workflows.py -q",
+  "fast_checks": {
+    "passed": 36
+  },
+  "verified": [
+    "Default Zarr3 and explicit Zarr2/Zarr3 forwarded by all seven scripts, with local and Slurm-shaped return values",
+    "Invalid formats and help exit before processing/submission",
+    "Importing tutorial scripts neither parses arguments nor submits jobs",
+    "Real PNG tutorial conversion writes default/explicit formats with exact pixel parity",
+    "Existing dual-format conversion/processing matrix remains green"
+  ],
+  "scope": [
+    "Python API output default is still Zarr2 unless overridden",
+    "Rotation/resampling retain the format of their existing container",
+    "Dedicated WEBKNOSSOS export remains Zarr3",
+    "No production data reads or real Slurm jobs in this validation"
+  ]
+}

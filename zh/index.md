@@ -7,7 +7,7 @@ permalink: /zh/
 
 # ConnectIO
 
-ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.11.02** 修复双格式流程中的文件覆盖、检查点加载及续跑完整性问题。详见[审查修复记录]({{ "/zh/audit/" | relative_url }}）。详见 [Zarr2/Zarr3 兼容说明]({{ "/zh/zarr/" | relative_url }}）。
+ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.11.05** 为转换和裁剪教程加入 Zarr2/Zarr3 输出选项，默认 Zarr3，并包含已有文件安全与续跑保护。详见[审查修复记录]({{ "/zh/audit/" | relative_url }}）。详见 [Zarr2/Zarr3 兼容说明]({{ "/zh/zarr/" | relative_url }}）。
 
 ## 文档
 

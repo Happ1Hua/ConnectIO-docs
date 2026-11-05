@@ -16,7 +16,7 @@ No global patch or upgrade of third-party Zarr is required.
 
 | Workflow | Zarr3 behavior | Existing Zarr2 behavior |
 | --- | --- | --- |
-| PNG, TIFF stack, 3D TIFF, hyperstack, TXM, HDF5, WKW annotation, precomputed → Zarr | Select v3 output explicitly | Default new output remains v2 |
+| PNG, TIFF stack, 3D TIFF, hyperstack, TXM, HDF5, WKW annotation, precomputed → Zarr | Select v3 output explicitly | Python API default remains v2; tutorials default to v3 |
 | Zarr → HDF5, WKW, precomputed, WEBKNOSSOS | Read arrays/layers and preserve declared geometry | Existing inputs remain supported |
 | Crop, rotation, up/downsampling | Read/write v3; use a separate output for registered WK arrays | Existing array processing and recovery remain supported |
 | LSD/ACRLSD training, inference, evaluation and model preflight | Shared reader, v3 prediction output and configurable training dataset paths | Original dataset names and v2 output remain defaults |
@@ -48,6 +48,29 @@ automatically registered WEBKNOSSOS datasets. Use the existing WEBKNOSSOS export
 stage to generate `datasource-properties.json`, magnifications and attachments.
 The existing `zarr2_to_zarr3` API name is retained and now also accepts v3 source
 arrays when re-exporting a layer.
+
+## Tutorial output selection (26.11.05)
+
+`tiff_to_zarr.py`, `png_stack_to_zarr.py`, `txm_to_zarr.py`, `hdf5_to_zarr.py`,
+`wkw_to_zarr.py`, `precomputed_to_zarr.py`, and `crop_zarr.py` accept
+`--zarr-format {2,3}` and default to **Zarr3** for new outputs. Edit example
+paths before running. The script constant `ZARR_FORMAT = 3` sets its default;
+an explicit command-line option takes precedence.
+
+```bash
+export CONNECTIO_EXECUTION_BACKEND=local
+python tutorials/tiff_to_zarr.py                  # Zarr3 by default
+python tutorials/tiff_to_zarr.py --zarr-format 2  # Zarr2
+```
+
+This tutorial default is separate from the Python API default of Zarr2. Appending
+to an existing store requires its actual format; select a new output directory
+to change formats. Rotation/resampling scripts inherit their existing container's
+format. Dedicated WEBKNOSSOS export produces Zarr3, and downsampling adds
+magnifications to an existing dataset. HDF5/WKW/precomputed exports and viewers
+keep their own output formats.
+
+See [tutorial format validation]({{ "/validation/tutorial-formats-26.11.05.json" | relative_url }}).
 
 ## WEBKNOSSOS input and coordinates
 

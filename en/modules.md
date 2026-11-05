@@ -25,6 +25,8 @@ Neuroglancer scripts are manual Slurm launchers. Set the Zarr path and dataset, 
 
 ## Tutorial index
 
+Conversion/crop tutorials accept `--zarr-format 2` or `3`, defaulting to Zarr3. See [tutorial output formats]({{ "/en/zarr/" | relative_url }}).
+
 The `tutorials/` directory contains one-file examples for TIFF/PNG/TXM to Zarr, HDF5 and WKW interchange, precomputed conversion, crop, resample, rotate, NML merge, TIFF preprocessing, TIFF alignment, LSD inference, and Neuroglancer viewing. Each compute example defines `SLURM_OPTIONS`, calls the real ConnectIO function, and prints the job record. When two examples write the same Zarr, add an `afterok` dependency.
 
 The Python API can also submit an import path without importing imaging dependencies on the login node:
