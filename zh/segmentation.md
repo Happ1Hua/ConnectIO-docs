@@ -1,79 +1,30 @@
 ---
 layout: default
-title: 分割
+title: LSD 训练与标签导出
 lang: zh
 permalink: /zh/segmentation/
 ---
 
-# 分割
+# LSD 训练与 WEBKNOSSOS 标签导出
 
-## 独立阶段
+使用已有权重做预测，可直接按[从亲和图生成标签]({{ "/zh/lsd-guide/" | relative_url }})操作。本页说明训练所需的标注，以及最终标签的两种交付方式。
 
-推荐使用 `connectio-segmentation-stage`。affinity 阶段在一次 GPU allocation 中依次运行配套的 LSD 和 ACRLSD 配置；之后的阶段完全分开，便于在 affinity、fragments、合并阈值和最终标签之间逐步人工审查。
+## 用神经元标注训练
 
-示例配置位于 `connectio/segmentation/configs/stages/`。Funke 原生字段保持不变，可选的 `_connectio` 对象保存运行器设置：
-
-```json
-{
-  "db_name": "sample_segmentation",
-  "_connectio": {
-    "run_dir": "../logs/stages",
-    "mongodb_dir": "../logs/stages/mongodb",
-    "mongod": "/path/to/mongod"
-  }
-}
-```
-
-运行 over-segmentation、agglomeration 或 LUT 时，作业内启动阶段专用 MongoDB，结束时关闭，数据库文件保留在 `mongodb_dir`。这三步必须复用同一目录和 `db_name`。文件锁会阻止两个阶段同时访问同一数据库；Daisy worker 会收到所在计算节点的 MongoDB 地址。
-
-每步写入 `<run_dir>/<stage>/status.json`，状态为 `RUNNING`、`COMPLETED` 或 `FAILED`。affinity 还保存解析为绝对路径的运行时配置。外层作业的时间、资源、account 和队列由 `--slurm-options` 控制；Funke 配置中的 `queue` 控制其分块 worker。
-
-## 模型与训练
-
-默认 Spider 模型适用于 8×8×8 nm FIB-SEM：
+Spider 基线模型对应 8 × 8 × 8 nm FIB-SEM。转换后的权重使用 `activate_upsampling=true`，以保留原网络转置卷积后的激活。
 
 | 阶段 | checkpoint | 迭代 |
 |---|---|---:|
 | LSD | `lsd_spider_8x8x8nm_fibsem_v1_450000.pt` | 450000 |
 | ACRLSD | `acrlsd_spider_8x8x8nm_fibsem_v1_230000.pt` | 230000 |
 
-预训练权重保存在当前为 private、下载需授权的 [Hugging Face ConnectIO-LSD](https://huggingface.co/happyhua1/ConnectIO-LSD)，包含 Spider、DigSpider 和联合多数据集模型。固定版本下载、校验和配套配置见[模型下载]({{ "/zh/models/" | relative_url }})。Spider 权重来自内部 TensorFlow/MALA checkpoint 转换，配置设置 `activate_upsampling=true`，保留原网络反卷积后的 ReLU。Hub 文件名、哈希与原本地 manifest 不同，需修改 checkpoint 路径并使用下载的 manifest。
+准备 `volumes/raw`、整数神经元 ID 数组 `volumes/labels/neuron_ids` 和监督掩膜 `volumes/labels/labels_mask`。自定义数组名可在训练配置的 `datasets` 指定。采样前核对体素大小、轴序、单位和物理范围。训练与预测对 `uint8` 除以 255、对 `uint16` 除以 65535；浮点原图须为 [0, 1] 内的有限值，再统一映射到 [−1, 1]。
 
-训练样本需要 `volumes/raw`、`volumes/labels/neuron_ids`、`volumes/labels/labels_mask`。GPU 训练使用 `connectio-lsd-train` 或 `connectio/segmentation/scripts/submit_training.sh`；配置中的网络结构必须与 checkpoint 一致。
+构造亲和图目标时，相邻两端属于同一非零实例才是正边。两端掩膜决定该边能否参与监督，边界上的零值也可以提供有效负样本。若预测大片连通，先看看训练样本里这些边的目标值和权重。[digspider 实验记录]({{ "/zh/case-study/" | relative_url }})给出了实际例子。训练用 `connectio-lsd-train`，初始化与续训的区别见[内存与续跑]({{ "/zh/optimization/" | relative_url }})。
 
-修正后的 affinity 监督将 target 和 valid 分开：两端属于同一非零对象时 target 才为正；valid 由两端 mask 和邻居是否存在决定。GrowBoundary 产生的零边界仍是有效负样本。生产训练同时补齐邻居 halo，并按跨通道、带裁剪的规则平衡权重。
+## 导出单个阈值，或在查看器中切换阈值
 
-## 推理和后处理
-
-训练与推理共用按 dtype 归一化的函数：`uint8` 按 255、`uint16` 按 65535 缩放；浮点 raw 必须有限且处于 `[0, 1]`，最终统一映射到 `[-1, 1]`。运行期间不得修改输入。输出同时记录通道/空间轴和物理元数据。raw 缺少轴元数据时保留历史 XYZ 约定；可在推理 JSON 中用 `axes` 声明其他存储顺序，这只声明轴，不转置像素。
-
-断点续跑绑定 checkpoint 的 SHA-256、科学配置、raw dataset、空间几何，以及 ACRLSD 的上游 LSD dataset。输入版本通过元数据和 chunk 文件的大小、修改时间、变更时间识别，**不是全体积像素内容 hash**；目前要求本地目录式 Zarr，启动时会扫描文件元数据。复制或编辑输入后，即使像素相等，也可能需要新输出。完成记录按输出 dataset 隔离，MongoDB 记录同时保留本地副本；同一 dataset 只允许一个写入进程。签名变化、无签名的 legacy 输出/状态、或已有完成记录但输出丢失时均拒绝续跑，须使用**新输出路径**。不要删除状态文件来强行复用。旧结果仍可用于审查/导出，但不能由此版本自动续跑。
-
-推理输出 channel-first `uint8`，继承 raw 的 `resolution` 与 `offset`。当 `mongo_required=false` 时，本地 JSON block tracker 可用于断点继续。独立 affinity 阶段关闭推理 MongoDB，并先运行 LSD、再运行 ACRLSD。
-
-watershed 根据已修复模型的 affinity 约定提取 fragments；agglomeration 写入区域邻接图和 merge score；LUT 阶段扫描阈值。最终 `segmentation` 阶段现在通过 `output_type` 提供两种由用户选择的输出：
-
-- `segmentation`（向后兼容的默认值）按一个 `threshold` 生成实体标签体积，并同时生成带 `datasource-properties.json` 的 WEBKNOSSOS Zarr3 dataset。
-- `agglomerate` 为每个指定阈值生成 WEBKNOSSOS Zarr v3 attachment，并生成一层 ID 连续、与 attachment 匹配的 base-fragments segmentation。阈值可用 `thresholds`，或 `thresholds_minmax` 加 `thresholds_step` 指定；同时设置 `agglomerate_file`、`out_file` 和 `out_dataset`。该阶段复用 LUT 文件及前序阶段持久化的同一个 MongoDB RAG。
-
-`agglomerate_file` 下的每个目录都是一个 `AgglomerateViewArtifact`。阶段同时生成 `webknossos_dataset_path`（默认与 `agglomerate_file` 同级的 `webknossos_dataset`）：其中 `segmentation/1` 是与映射匹配的 dense base-fragments Zarr3，`segmentation/agglomerates/` 是各阈值附件，根目录含 `datasource-properties.json`。将整个 dataset 目录放到 WEBKNOSSOS 对应位置即可。`out_file/out_dataset` 仍保存中间 Zarr2 标签体；原始稀疏 fragment ID 不能直接索引附件。
-
-WEBKNOSSOS 可在一个 dataset 中同时使用 WKW raw 和 Zarr3 segmentation；raw 无须为此强制转换。若希望把 Zarr2 raw 也放入该 dataset，可用 `zarr2_to_zarr3` 单独添加 `category="color"` 图层。转换器支持 `category="segmentation"`、指定源数组路径和 Slurm 提交，完成时自动更新 `datasource-properties.json`。
-
-若要并入已有 WKW raw dataset，只需复制成品的 `segmentation/` 子目录，并把成品 JSON 的 segmentation 项追加到已有 `dataLayers`；保留已有 raw 项、`scale` 和其他元信息，不要用成品 JSON 整体覆盖已有文件。两者的体素大小与坐标系必须一致。
-
-只含 `segmentation/1` 的数据集在缩小视图并启用 agglomerate ID Mapping 时，会提示需要放大。发布后使用独立的 `webknossos-downsample` 阶段，为 **segmentation 图层**生成与 raw 匹配的 2、4、8、16、32 倍率；示例配置为 `07_webknossos_downsample.example.json`：
-
-```bash
-connectio-segmentation-stage webknossos-downsample \
-  connectio/segmentation/configs/stages/07_webknossos_downsample.example.json
-```
-
-该阶段调用 WEBKNOSSOS 官方 `downsample` CLI，仅处理指定图层，默认使用适合分割 ID 的众数滤波；Connectio 会在旧版 CLI 写回 metadata 后保留原有 agglomerate 附件引用。`zarr2_to_zarr3` 也可设置 `downsample_coarsest_mag=32`，在转换后生成粗倍率。大型数据请通过 Slurm 运行，且确认新倍率目录对 datastore 运行账户可读。
-
-通过 Slurm 生成的文件可能采用仅所有者可读的权限（目录 `700`、文件 `600`）。将 dataset 放入自建 WEBKNOSSOS 的 `binaryData/<组织>/<数据集>` 后，应确认 datastore 实际运行账户能遍历所有目录并读取 `datasource-properties.json`、Zarr 元信息及数据块；同属 `songkun` 等共享组不等于容器账户一定有该组权限。否则网页可能显示 “Not imported yet”。WEBKNOSSOS 可从数据集列表执行 “Scan disk for new datasets”，自动发现也可能需要约 10 分钟。
-
-若扫描后仍显示 “Not imported yet”，先在 datastore 容器内确认实际挂载路径下存在且可读取 `datasource-properties.json`，再查看 datastore 导入日志。该状态本身不能证明 Zarr 体素或 agglomerate 数组格式有误；至少在 WEBKNOSSOS 26.05.0 中，扫描器看不到 datasource 文件时会产生这一状态，而 JSON 校验失败会产生不同的错误。
+最终阶段配置使用 `output_type="segmentation"` 时，按一个 `threshold` 写实例标签。如果要在 WEBKNOSSOS 比较多个阈值，选 `output_type="agglomerate"`，设置 `thresholds` 或 `thresholds_minmax` 与 `thresholds_step` 的组合，并填写 `agglomerate_file`、`out_file` 和 `out_dataset`。保留对应的 LUT 和图数据库。每份映射都引用随它生成的连续 ID 基础片段层。
 
 ```text
 webknossos_dataset/
@@ -88,40 +39,15 @@ webknossos_dataset/
         └── ...
 ```
 
-进入下一步前必须将 affinity、fragments 与 raw 叠加检查。改变 watershed 的 affinity 极性只适合作为诊断，不能替代正确监督。
+将 `webknossos_dataset_path` 指向的完整目录交给 datastore。如果已有原图数据集，则复制生成的 `segmentation/`，把标签层条目追加到 `dataLayers`，保留原图层和原比例尺。找一个明确的结构核对两层的空间位置。
 
-旧的 `00.submit_affinity.sh` 和 `01.submit_crop_postprocess.sh` 仍保留兼容；后者会串行执行多个后处理步骤，不推荐用于需要逐步人工审查的新流程。
+## 缩小时仍能查看标签
 
-## 评估与查看
-
-评估保留浮点 `resolution` 和 `offset`，不会截断 `7.8125` nm 或 `0.5` nm 等值。两份标签数组必须为三维，空间轴顺序与单位相同，体素尺寸相等、有限且为正，offset 位于同一体素网格上；通过整数体素索引求交集，网格对齐容差为 `1e-6` 体素。不自动重采样或转置。报告包含交集物理 ROI 的轴与单位。legacy 元数据缺少单位时按 nm 解释。
-
-轴可记录为 `axes` 或 `_ARRAY_DIMENSIONS`。旧输入两者都没有时，须显式提供真实存储顺序：
+先把示例中的数据集路径和图层名换成实际值，再运行：
 
 ```bash
-connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
-  RESULT.zarr volumes/segmentation \
-  --gt-axes xyz --seg-axes xyz --output evaluation.json
+connectio-segmentation-stage webknossos-downsample \
+  connectio/segmentation/configs/stages/07_webknossos_downsample.example.json
 ```
 
-实际存储为 ZYX 时改为 `zyx`。显式声明与元数据冲突会报错；轴不一致时先转换再评估。缺少 `resolution`、非法几何、单位不同或存在非整数体素偏移时拒绝计算，不静默取整。
-
-评估根据 Zarr 的 `offset` 和 `resolution` 求 ground truth 与 prediction 的物理坐标交集，并输出 VOI、Rand、标签数、前景体素数和最大 segment 占比：
-
-```bash
-connectio-lsd-evaluate \
-  GT.zarr volumes/labels/neuron_ids \
-  RESULT.zarr volumes/segmentation \
-  --output evaluation.json
-
-connectio-lsd-view RESULT.zarr volumes/raw volumes/segmentation
-```
-
-CPU 轻量 smoke test 可用缩小网络验证 I/O 和控制流。生产尺寸 Spider smoke test 应在 `GPUA800` 分别运行一个真实 LSD block 和一个 ACRLSD block，并写入独立测试 Zarr，不修改源体积。
-
-2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。
-
-
-## Zarr2 / Zarr3（26.10.28）
-
-体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。
+该阶段调用 WEBKNOSSOS 的降采样工具，最粗倍率可与原图匹配。若界面显示 “Not imported yet”，先到 datastore 挂载环境检查运行账号是否能进入数据目录、读取 `datasource-properties.json`、元数据和数据块，再触发磁盘扫描并查看导入日志。

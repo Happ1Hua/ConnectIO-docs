@@ -1,106 +1,53 @@
 ---
 layout: default
-title: Install and start
+title: Install and convert a stack
 lang: en
 permalink: /en/getting-started/
 ---
 
-# Install and start
+# Install and convert a stack
 
-Generate matching configs from local checkpoints and inspect inference without GT; model repositories are currently private. The [model downloads]({{ "/en/models/" | relative_url }}) covers revisions, checksums and matching network configuration.
+This first conversion runs on a CPU and takes four small PNG files from the GUI package. For the browser version of the same exercise, see the [GUI workbench]({{ "/en/gui/" | relative_url }}).
 
-## Local deployment
+## Install from the source checkout
 
-On a Linux workstation, install the required dependencies in your Python environment and set `export CONNECTIO_EXECUTION_BACKEND=local`. The commands below will then run synchronously on that machine; use `--backend slurm` to submit a particular call. The site environment names and partitions below are optional cluster examples. See [local and Slurm execution]({{ "/en/slurm/" | relative_url }}) for MongoDB and worker configuration.
-
-## Cluster environment examples
-
-The cluster workflow uses two Conda environments:
-
-| Work | Environment | Default partition |
-|---|---|---|
-| Conversion, preprocessing, alignment | `data_format_convert` | `C64M512G` |
-| Training, inference, segmentation | `lsd_pytorch` | `GPUA800` for GPU work; `C64M512G` for CPU post-processing |
-
-Install the source package in each environment that needs it:
+Use a Python environment on Linux. The GUI and its sample images are included on the [GUI branch of ConnectIO](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1). From the root of that checkout, run:
 
 ```bash
-conda activate data_format_convert
-pip install -e .
-
-conda activate lsd_pytorch
-pip install -r requirements-segmentation.txt
-pip install -e . --no-deps
+python -m pip install -e .
+connectio-gui --help
 ```
 
-The segmentation extra is also available as `pip install -e ".[segmentation]"`. The legacy Funke post-processing stack (`lsds 0.1`, `waterz 0.9.6`, `daisy 0.2`, `funlib.segment 0.1`, `funlib.persistence 0.1.0`) must be installed in the segmentation environment. On the current cluster, `connectio/segmentation/scripts/activate_env.sh` exposes the verified legacy packages.
+On a cluster, the compute nodes need to be able to read the installation, the input and the output directory. Run the example below in a CPU allocation or on a workstation.
 
-Synful partner detection uses the separate `synful-pytorch` extra and `connectio-synful` command. See the [detailed Synful PyTorch guide]({{ "/en/synful/" | relative_url }}) for installation, input requirements, configuration, commands, and coordinate checks. Synful shares the common execution policy: `--backend local` runs in the current process and `--backend slurm` submits a job.
-
-## First stage submission
-
-Copy a JSON from `connectio/segmentation/configs/stages/`, edit its data paths, then validate the plan:
-
-```bash
-connectio-segmentation-stage affinity my_run/02_affinity.json --dry-run
-connectio-segmentation-stage affinity my_run/02_affinity.json
-```
-
-The command prints a job ID and log directory. It submits one stage and returns immediately. Inspect `status.json`, Slurm logs, the generated Zarr dataset, and the Neuroglancer view before starting the next stage.
-
-## Python API
+## Read back the result
 
 ```python
-from connectio.segmentation import submit_stage
+from pathlib import Path
+from tempfile import mkdtemp
 
-job = submit_stage(
-    "affinity",
-    "my_run/02_affinity.json",
-    slurm_options={"time": "48:00:00", "gpus": 1},
-)
-print(job.job_id, job.stdout, job.stderr)
+import connectio.gui
+from connectio import zarr_io
+from connectio.conversion import png_stack_to_zarr
+
+slices = Path(connectio.gui.__file__).parent / "examples" / "png-stack"
+output = Path(mkdtemp()) / "example.zarr"
+png_stack_to_zarr(str(slices), str(output), zarr_format=3, backend="local")
+raw = zarr_io.open_group(str(output), mode="r")["volumes/raw"]
+print(output, raw.shape, raw.dtype, list(raw.attrs["axes"]))
 ```
 
-Use `job.status()`, `job.result(timeout=...)`, or `job.cancel()` when programmatic control is needed. `slurm=False` or `backend="local"` runs synchronously on a standalone workstation without an allocation.
+Expect `(32, 32, 4)`, `uint8` and `['x', 'y', 'z']`. Each increment in the last index moves to the next PNG. The example prints its temporary output path and creates a fresh one on each run. For your own stack, use a permanent output location and supply the measured `resolution` and `offset`.
 
-## Before the first run
+## Add the dependencies for your experiment
 
-Start in a checkout of [ConnectIO main](https://github.com/Happ1Hua/ConnectIO/tree/main). Check that the selected environment can import ConnectIO and that the commands expose their expected arguments:
+| Work | Install in the environment that runs the job |
+| --- | --- |
+| Conversion, TIFF processing and alignment | Base install above |
+| LSD / ACRLSD | `python -m pip install -e '.[segmentation]'` |
+| Mito | `python -m pip install -e '.[mito-pytorch]'` |
+| Synful | `python -m pip install -e '.[synful-pytorch]'` |
 
-```bash
-python -m pip show connectio
-connectio-segmentation-stage --help
-connectio-align --help
-connectio-tiff-check --help
-```
+Use a PyTorch build compatible with the compute node for GPU prediction. The fragment and graph stages also need the legacy Daisy/Funke packages listed in `requirements-segmentation.txt` and access to MongoDB. See [local and Slurm execution]({{ "/en/slurm/" | relative_url }}) for cluster environments and worker setup.
 
-The commands use the same installed source tree, but their dependencies differ. Conversion and alignment need the preprocessing stack. LSD inference needs PyTorch and the model checkpoint. Funke post-processing additionally needs the legacy packages and a usable `mongod` executable. [Synful]({{ "/en/synful/" | relative_url }}) has a separate training and prediction workflow.
-
-For a new LSD run, copy the matching JSON examples from `connectio/segmentation/configs/stages/` into your run's `configs/` directory. Edit the real input/output paths, dataset keys, checkpoint locations, voxel metadata, and Slurm resources. The sample `/shared/data/...` paths are placeholders. Paths in stage JSON are resolved relative to that JSON; `--dry-run` checks the stage name and config-file path and prints a submission plan, but does not verify every dataset or model weight. The compute job validates those when it starts.
-
-## A first reviewable stage
-
-For example, run only affinity prediction after raw and checkpoint inputs are ready:
-
-```bash
-connectio-segmentation-stage affinity configs/02_affinity.json --dry-run
-connectio-segmentation-stage affinity configs/02_affinity.json \
-  --slurm-options '{"time":"12:00:00","gpus":1}'
-```
-
-The second command submits and returns. Find the job ID and log directory in its output. The stage status is in `<run_dir>/affinity/status.json`, where `<run_dir>` comes from `_connectio.run_dir` or the generated default beside the config. Wait for `COMPLETED`, inspect the output Zarr in a viewer, and record the review before submitting the next stage. See the [stage-by-stage pipeline]({{ "/en/pipeline/" | relative_url }}) and [Slurm guide]({{ "/en/slurm/" | relative_url }}) for the rest of the sequence.
-
-## Choosing a starting point
-
-You do not need to rerun conversion or alignment when a suitable raw Zarr already exists. You can start at affinity with raw and compatible checkpoints, or at a later stage when its required affinities, fragments, lookup tables, and persistent graph state already exist. A new `run_dir` stores new status files; it does not recreate missing scientific inputs. Do not point independent runs at the same output dataset or MongoDB database directory while jobs are active.
-
-If a stage fails, inspect both its `status.json` and the Slurm `stderr.log` before editing the configuration. Re-run the same stage only after confirming whether partial output can be resumed; use a new output path for a scientifically different run. The workflow does not automatically advance to the next stage.
-
-## Native mitochondrial segmentation
-
-Install `requirements-mito.txt` in a PyTorch environment, then `pip install -e . --no-deps`. See [Mito]({{ "/en/mito/" | relative_url }}) for configuration and compute allocation.
-
-
-## Zarr2 / Zarr3 (26.10.28)
-
-Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).
+For another local computation, pass `backend="local"` or set `CONNECTIO_EXECUTION_BACKEND=local` in the shell. With the default Slurm backend, a call made outside an allocation returns a job ID. Read its logs after it runs.

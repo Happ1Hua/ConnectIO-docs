@@ -1,36 +1,27 @@
 ---
 layout: default
-title: 中文文档
+title: 使用手册
 lang: zh
 permalink: /zh/
 ---
 
-# ConnectIO
+# ConnectIO 使用手册
 
-ConnectIO 提供可迁移的连接组学格式转换、预处理、对齐、分割、Synful 突触配对检测和可视化流程。**26.11.05** 为转换和裁剪教程加入 Zarr2/Zarr3 输出选项，默认 Zarr3，并包含已有文件安全与续跑保护。详见[审查修复记录]({{ "/zh/audit/" | relative_url }}）。详见 [Zarr2/Zarr3 兼容说明]({{ "/zh/zarr/" | relative_url }}）。
+第一次在集群上用 ConnectIO，可以先把随软件提供的四张 PNG 切片转成 Zarr。这个例子无需模型和实验数据，能一次检查浏览器连接、作业提交和结果读取。按[图形工作台]({{ "/zh/gui/" | relative_url }})中的“用四张切片试跑”操作。使用 Linux 工作站或 Python 的读者可从[安装与首次转换]({{ "/zh/getting-started/" | relative_url }})开始。
 
-## 文档
+## 手上有什么数据？
 
-- [Mito PyTorch 线粒体分割]({{ "/zh/mito/" | relative_url }})：原生网络、双 GT 权重、JSON 配置、训练与实例分割。
+| 起点 | 接下来做什么 |
+| --- | --- |
+| 一叠刚采集的 TIFF | 先检查文件顺序和逐层亮度。需要校正时，再做归一化、CLAHE 或对齐。见[从 TIFF 切片准备原图]({{ "/zh/modules/" | relative_url }})。 |
+| 已对齐的切片、HDF5 或 Precomputed | 选择转换器，写出 Zarr，对照原图核实体素大小和原点。见[转换、裁剪与重采样]({{ "/zh/formats/" | relative_url }})。 |
+| 已有 Zarr 原图和模型权重 | 生成推理配置，检查权重和输入网格是否匹配。见[权重与推理配置]({{ "/zh/models/" | relative_url }})。 |
+| 已有神经元亲和图或 fragments | 直接从已有产物进入相应阶段，保留后续步骤要用的图数据库。见[神经元分割流程]({{ "/zh/pipeline/" | relative_url }})。 |
 
-- [模型下载]({{ "/zh/models/" | relative_url }}): 本地模型配置生成、自动参数校验、无需 GT 的预检及私有权重访问。
+## 要从原图中得到什么？
 
-- [安装与开始]({{ "/zh/getting-started/" | relative_url }})：环境、安装和首次提交。
-- [raw 到 segmentation 流程]({{ "/zh/pipeline/" | relative_url }})：阶段边界、人工审查和断点启动。
-- [分割]({{ "/zh/segmentation/" | relative_url }})：LSD/ACRLSD、Funke 后处理、配置、MongoDB 状态和模型。
-- [LSD 与 ACRLSD 操作指南]({{ "/zh/lsd-guide/" | relative_url }})：详细说明输入、阶段命令、审查、图数据库状态和失败恢复。
-- [Synful PyTorch]({{ "/zh/synful/" | relative_url }})：详细介绍安装、输入与坐标、训练、推理、提取、导出、验证和排错。
-- [Slurm 执行]({{ "/zh/slurm/" | relative_url }})：默认资源、覆盖参数、作业对象和集群规则。
-- [模块与教程]({{ "/zh/modules/" | relative_url }})：格式、预处理、对齐、可视化和示例。
-- [格式与体数据操作]({{ "/zh/formats/" | relative_url }})：支持的互转格式、内存模式和处理操作。
-- [代码优化与资源控制]({{ "/zh/optimization/" | relative_url }}): 可复现训练、流式处理、评估内存和推理参数。
-- [更新记录]({{ "/zh/changelog/" | relative_url }})：当前及历史版本。
-- [digspider 实测案例]({{ "/zh/case-study/" | relative_url }})：8 nm 全流程及 affinity 监督修复记录。
+- **神经元实例标签**：LSD 和 ACRLSD 先预测形状描述子和亲和图。再做分水岭、按阈值合并片段。见[从亲和图生成标签]({{ "/zh/lsd-guide/" | relative_url }})。
+- **线粒体实例标签**：Mito 在模型网格上预测前景与轮廓，再将分割结果还原到原图网格。见[线粒体分割]({{ "/zh/mito/" | relative_url }})。
+- **突触前后端配对**：Synful 从原图预测突触后位点和配对位移，导出 CSV 或 WEBKNOSSOS 骨架以供复核。见[突触检测]({{ "/zh/synful/" | relative_url }})。
 
-## 设计规则
-
-1. 计算入口默认提交 Slurm，提交失败时不会退回登录节点计算。
-2. 每个科学处理阶段只生成可审查的结果并停止；人工确认后再提交下一阶段。
-3. 数据路径写入 JSON，相对路径以配置文件所在位置解析，整套流程可整体迁移。
-4. 各阶段引用根目录下同一份 raw Zarr，不重复复制大体积数据。
-5. Neuroglancer 保持原有手动 Slurm 查看方式。
+想了解如何判断一次分割能否接受，可看 [digspider 实验记录]({{ "/zh/case-study/" | relative_url }})。其中记录了第 461 张切片附近的配准问题，以及一次训练损失下降却预测出错误亲和图的排查过程。

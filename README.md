@@ -1,21 +1,9 @@
 # ConnectIO documentation
 
-Bilingual documentation for ConnectIO conversion, preprocessing, alignment, segmentation, Slurm execution, and validated workflows.
+Read the [English manual](https://Happ1Hua.github.io/ConnectIO-docs/en/) or the [中文手册](https://Happ1Hua.github.io/ConnectIO-docs/zh/).
 
-ConnectIO 格式转换、预处理、对齐、分割、Slurm 执行及验证流程的中英文文档。
+For a first Slurm job, convert the four sample PNG slices in the [GUI workbench](https://Happ1Hua.github.io/ConnectIO-docs/en/gui/). To run the same conversion on a workstation, follow [Install and convert a stack](https://Happ1Hua.github.io/ConnectIO-docs/en/getting-started/).
 
-- [Documentation site](https://Happ1Hua.github.io/ConnectIO-docs/)
-- [English](en/)
-- [中文](zh/)
+第一次在集群提交作业，可在[图形工作台](https://Happ1Hua.github.io/ConnectIO-docs/zh/gui/)使用随软件提供的四张 PNG 试跑。工作站用户可按[安装与首次转换](https://Happ1Hua.github.io/ConnectIO-docs/zh/getting-started/)操作。
 
-Documentation version: **26.11.05**
-
-Training recovery and resource-control update: **2026-10-04**
-
-Model configuration and GT-free preflight update: **2026-10-13**
-
-Model repositories are currently private; downloads require access permission. 本地模型配置与预检无需网络，模型仓库当前为私有。
-
-- [LSD/ACRLSD models](https://huggingface.co/happyhua1/ConnectIO-LSD)
-- [Synful models](https://huggingface.co/happyhua1/ConnectIO-Synful)
-- [Model download guide](https://Happ1Hua.github.io/ConnectIO-docs/en/models/) · [模型下载](https://Happ1Hua.github.io/ConnectIO-docs/zh/models/)
+Package version **26.11.05** · [Release notes](https://Happ1Hua.github.io/ConnectIO-docs/en/changelog/) · [版本记录](https://Happ1Hua.github.io/ConnectIO-docs/zh/changelog/)

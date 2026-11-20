@@ -1,104 +1,53 @@
 ---
 layout: default
-title: 安装与开始
+title: 安装与首次转换
 lang: zh
 permalink: /zh/getting-started/
 ---
 
-# 安装与开始
+# 安装与首次转换
 
-推理前可用本地 checkpoint 生成匹配配置并做无需 GT 的预检；模型仓库当前为 private，说明见[模型下载]({{ "/zh/models/" | relative_url }})。
+下面用 GUI 软件包自带的四张 PNG 试做一次转换。只需 CPU。习惯浏览器操作的读者可用同一组切片完成[图形工作台试跑]({{ "/zh/gui/" | relative_url }})。
 
-## 本地部署
+## 安装
 
-非集群 Linux 用户可在自己的 Python 环境安装所需依赖，然后设置 `export CONNECTIO_EXECUTION_BACKEND=local`。本页后续 CLI 会同步在本机执行；单次使用 `--backend slurm` 可提交集群。无需使用下表中的站点环境名或分区。完整配置、MongoDB 与内部 worker 说明见[本地与 Slurm 执行]({{ "/zh/slurm/" | relative_url }})。
-
-## 集群环境示例
-
-| 工作 | Conda 环境 | 默认分区 |
-|---|---|---|
-| 转换、预处理、对齐 | `data_format_convert` | `C64M512G` |
-| 训练、推理、分割 | `lsd_pytorch` | GPU 工作使用 `GPUA800`；CPU 后处理使用 `C64M512G` |
-
-在需要使用 ConnectIO 的环境安装源码：
+在 Linux 的 Python 环境中，进入 ConnectIO 源码根目录。含 GUI 和示例切片的版本见 [ConnectIO GUI 分支](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1)。
 
 ```bash
-conda activate data_format_convert
-pip install -e .
-
-conda activate lsd_pytorch
-pip install -r requirements-segmentation.txt
-pip install -e . --no-deps
+python -m pip install -e .
+connectio-gui --help
 ```
 
-也可使用 `pip install -e ".[segmentation]"`。Funke 后处理还需要旧版 `lsds 0.1`、`waterz 0.9.6`、`daisy 0.2`、`funlib.segment 0.1` 和 `funlib.persistence 0.1.0`。当前集群可用 `connectio/segmentation/scripts/activate_env.sh` 加载已验证的旧版依赖。
+在集群上，计算节点需要能读到安装目录和输入，并能写入输出位置。下面的 Python 示例在工作站或已申请的 CPU 节点上运行。
 
-Synful 突触配对检测使用独立的 `synful-pytorch` extra 和 `connectio-synful` 命令。所需分支、输入格式、配置、命令与坐标检查见[详细的 Synful PyTorch 指南]({{ "/zh/synful/" | relative_url }})。Synful 与其他入口共用执行策略：`--backend local` 在当前进程运行，`--backend slurm` 提交作业。
-
-## 首次提交
-
-从 `connectio/segmentation/configs/stages/` 复制 JSON，修改数据路径并先检查提交计划：
-
-```bash
-connectio-segmentation-stage affinity my_run/02_affinity.json --dry-run
-connectio-segmentation-stage affinity my_run/02_affinity.json
-```
-
-命令打印作业号和日志目录，然后立即返回。提交下一阶段之前，检查 `status.json`、Slurm 日志、Zarr 数据和 Neuroglancer 结果。
-
-## Python 接口
+## 读回刚转换的数组
 
 ```python
-from connectio.segmentation import submit_stage
+from pathlib import Path
+from tempfile import mkdtemp
 
-job = submit_stage(
-    "affinity",
-    "my_run/02_affinity.json",
-    slurm_options={"time": "48:00:00", "gpus": 1},
-)
-print(job.job_id, job.stdout, job.stderr)
+import connectio.gui
+from connectio import zarr_io
+from connectio.conversion import png_stack_to_zarr
+
+slices = Path(connectio.gui.__file__).parent / "examples" / "png-stack"
+output = Path(mkdtemp()) / "example.zarr"
+png_stack_to_zarr(str(slices), str(output), zarr_format=3, backend="local")
+raw = zarr_io.open_group(str(output), mode="r")["volumes/raw"]
+print(output, raw.shape, raw.dtype, list(raw.attrs["axes"]))
 ```
 
-程序可使用 `job.status()`、`job.result(timeout=...)` 和 `job.cancel()`。`slurm=False` 或 `backend="local"` 可在独立工作站运行，同步返回结果，无需 allocation。
+预期输出包含 `(32, 32, 4)`、`uint8` 和 `['x', 'y', 'z']`。最后一维的四层分别对应四张 PNG。脚本每次都在新建的临时目录输出，并打印实际路径。换成自己的切片时，请改为长期保存的位置，并给出实测体素大小 `resolution` 和原点 `offset`。
 
-## 首次运行前
+## 按实验安装依赖
 
-请使用 [ConnectIO 主分支](https://github.com/Happ1Hua/ConnectIO/tree/main)，并检查当前环境能导入 ConnectIO，且命令行参数符合预期：
+| 要做的工作 | 在运行作业的环境中安装 |
+| --- | --- |
+| 转换、TIFF 预处理、对齐 | 上述基础安装 |
+| LSD / ACRLSD 神经元分割 | `python -m pip install -e '.[segmentation]'` |
+| Mito 线粒体分割 | `python -m pip install -e '.[mito-pytorch]'` |
+| Synful 突触检测 | `python -m pip install -e '.[synful-pytorch]'` |
 
-```bash
-python -m pip show connectio
-connectio-segmentation-stage --help
-connectio-align --help
-connectio-tiff-check --help
-```
+GPU 推理需要与计算节点匹配的 PyTorch。神经元片段提取与图合并还需要 `requirements-segmentation.txt` 中列出的旧版 Daisy/Funke 组件和 MongoDB。环境名、作业资源和 worker 的设置见[本机与 Slurm 执行]({{ "/zh/slurm/" | relative_url }})。
 
-这些命令来自同一份源码，但依赖不同。转换和对齐使用预处理依赖；LSD 推理需要 PyTorch 和模型 checkpoint；Funke 后处理还需要旧版包及可用的 `mongod`。独立的训练和检测方式见 [Synful 指南]({{ "/zh/synful/" | relative_url }})。
-
-新建 LSD 运行目录时，将 `connectio/segmentation/configs/stages/` 中的 JSON 示例复制到自己的 `configs/`，逐项修改真实输入输出路径、数据集键、checkpoint、体素元数据和 Slurm 资源。`/shared/data/...` 是占位路径。stage JSON 中的相对路径以该 JSON 所在目录解析。`--dry-run` 检查阶段名称与配置文件路径并打印提交计划，**不会**验证所有数据集或模型权重；计算作业启动后才会进行相关检查。
-
-## 第一个可审查阶段
-
-例如，raw 和 checkpoint 就绪后只提交 affinity：
-
-```bash
-connectio-segmentation-stage affinity configs/02_affinity.json --dry-run
-connectio-segmentation-stage affinity configs/02_affinity.json \
-  --slurm-options '{"time":"12:00:00","gpus":1}'
-```
-
-第二条命令提交后立即返回，输出作业号和日志目录。阶段状态保存在 `<run_dir>/affinity/status.json`；`<run_dir>` 取自 `_connectio.run_dir`，未设置时在配置文件旁生成默认目录。等待 `COMPLETED`，用查看器检查 Zarr 输出并记录审查结论，再提交下一阶段。完整顺序见[分阶段流程]({{ "/zh/pipeline/" | relative_url }})，资源和日志说明见 [Slurm 指南]({{ "/zh/slurm/" | relative_url }})。
-
-## 选择起点与处理失败
-
-已有合适 raw Zarr 时不必重做转换与对齐；有 raw 和匹配 checkpoint 可从 affinity 开始；再往后则需要对应的 affinity、fragments、LUT 和持久化图数据库。新建 `run_dir` 只会保存新的状态文件，不会生成缺失的科学输入。作业仍运行时，不要让两个独立实验写入同一输出 dataset 或 MongoDB 数据库目录。
-
-某阶段失败后先检查 `status.json` 和 Slurm `stderr.log`，再修改配置。重新运行前确认部分输出是否可续跑；科学设置变更时使用新输出路径。流程不会自动提交下一阶段。
-
-## 原生线粒体分割
-
-在 PyTorch 环境中安装 `requirements-mito.txt`，再执行 `pip install -e . --no-deps`。配置与计算资源用法见 [Mito]({{ "/zh/mito/" | relative_url }})。
-
-
-## Zarr2 / Zarr3（26.10.28）
-
-体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。
+后续仍在工作站计算时，可逐次传入 `backend="local"`，也可在 shell 中设置 `CONNECTIO_EXECUTION_BACKEND=local`。若沿用默认 Slurm 后端，从登录节点提交后会得到作业号，稍后可据此查看执行日志。

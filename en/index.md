@@ -1,37 +1,27 @@
 ---
 layout: default
-title: English documentation
+title: User manual
 lang: en
 permalink: /en/
 ---
 
-# ConnectIO
+# ConnectIO user manual
 
-ConnectIO provides reusable conversion, preprocessing, alignment, segmentation, Synful synapse detection, and visualization workflows for connectomics volumes. Release **26.11.05** adds Zarr2/Zarr3 output selection to conversion/crop tutorials, defaulting them to Zarr3, alongside the existing storage and resume protections. See the [review repair record]({{ "/en/audit/" | relative_url }}). See [Zarr2/Zarr3 compatibility]({{ "/en/zarr/" | relative_url }}).
+For a first cluster job, convert the four sample PNG slices to Zarr. This checks the browser connection, the Slurm submission and access to the output before you bring in a specimen or model. Follow *Try the four-slice example* in the [GUI workbench]({{ "/en/gui/" | relative_url }}). For a Linux workstation or a Python session, start with [install and convert a stack]({{ "/en/getting-started/" | relative_url }}).
 
-## Documentation
+## Start with the data you have
 
-- [Mito PyTorch]({{ "/en/mito/" | relative_url }}): native model, two-GT checkpoint, JSON configuration, training and instance segmentation.
+| Starting material | Where to go |
+| --- | --- |
+| A new TIFF stack | Check slice order and brightness before choosing normalization, CLAHE or registration. See [prepare a TIFF stack]({{ "/en/modules/" | relative_url }}). |
+| Aligned slices, HDF5 or Precomputed | Choose a converter, then check voxel size and origin against the source. See [format conversion and cropping]({{ "/en/formats/" | relative_url }}). |
+| A raw Zarr and model weights | Generate an inference config and check that the weights and voxel grid match. See [weights and inference configs]({{ "/en/models/" | relative_url }}). |
+| Neuron affinities or fragments | Pick up at the stage that consumes them. Later steps also need the merge graph. See [neuron segmentation stages]({{ "/en/pipeline/" | relative_url }}). |
 
-- [Model downloads]({{ "/en/models/" | relative_url }}): local config generation, automatic parameter validation, GT-free preflight and private model access.
+## Choose an output
 
-- [Install and start]({{ "/en/getting-started/" | relative_url }}): environments, installation, and first submissions.
-- [Raw-to-segmentation pipeline]({{ "/en/pipeline/" | relative_url }}): stage boundaries, review gates, and restart behavior.
-- [Segmentation]({{ "/en/segmentation/" | relative_url }}): LSD/ACRLSD inference, Funke post-processing, configs, MongoDB state, and models.
-- [LSD and ACRLSD operator guide]({{ "/en/lsd-guide/" | relative_url }}): detailed inputs, stage commands, review checks, graph-state continuity, and recovery.
-- [Synful PyTorch]({{ "/en/synful/" | relative_url }}): detailed setup, data and coordinate conventions, training, inference, extraction, export, validation, and troubleshooting.
-- [Slurm execution]({{ "/en/slurm/" | relative_url }}): defaults, overrides, job handles, and cluster rules.
-- [Modules and tutorials]({{ "/en/modules/" | relative_url }}): conversion, preprocessing, alignment, formats, visualization, and examples.
-- [Formats and volume operations]({{ "/en/formats/" | relative_url }}): supported interchange formats, memory modes, and processing operations.
-- [Changelog]({{ "/en/changelog/" | relative_url }}): current and historical releases.
-- [digspider case study]({{ "/en/case-study/" | relative_url }}): the validated 8 nm workflow and affinity-supervision correction.
+- **Neuron instances.** LSD and ACRLSD predict shape descriptors and affinities. Watershed and graph merging turn them into labels. See [from affinities to labels]({{ "/en/lsd-guide/" | relative_url }}).
+- **Mitochondrial instances.** Mito predicts foreground and contours on its model grid and restores the labels to the source grid. See [mitochondrial segmentation]({{ "/en/mito/" | relative_url }}).
+- **Synaptic partners.** Synful predicts postsynaptic sites and displacements to presynaptic partners. Export the pairs as CSV or WEBKNOSSOS skeletons for review. See [synapse detection]({{ "/en/synful/" | relative_url }}).
 
-- [Code optimization and resource controls]({{ "/en/optimization/" | relative_url }}): reproducible training, streaming processing, evaluation memory and inference settings.
-
-## Design rules
-
-1. A compute entry point submits to Slurm by default; it never silently falls back to a login node.
-2. Each scientific stage produces reviewable output and stops. The operator approves it before submitting the next stage.
-3. Paths live in JSON configuration, and relative paths resolve from the configuration file, so a workflow can be moved as a unit.
-4. A shared raw Zarr can be referenced by every stage without copying the volume.
-5. Neuroglancer launchers keep their existing Slurm behavior and remain manual review tools.
+For an example of what to look for during review, the [digspider experiment]({{ "/en/case-study/" | relative_url }}) traces a registration failure near slice 461 and an affinity training run whose loss concealed a target error.

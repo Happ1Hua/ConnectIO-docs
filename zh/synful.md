@@ -1,128 +1,46 @@
 ---
 layout: default
-title: Synful PyTorch
+title: 突触检测
 lang: zh
 permalink: /zh/synful/
 ---
 
-# Synful PyTorch：突触检测与 pre/post 配对
+# 用 Synful 检测突触前后端配对
 
-本模块 CLI 使用统一的执行策略：`--backend local` 在工作站运行，`--backend slurm` 提交作业，也可设置 `export CONNECTIO_EXECUTION_BACKEND=local` 让下文命令默认本地运行。不设置时默认 Slurm；帮助不提交。详见[本地与 Slurm 执行]({{ "/zh/slurm/" | relative_url }})。
+Synful 根据电镜原图预测突触后位点和指向突触前端的位移。最终要复核的是一对位置。需要按神经元 ID 过滤候选时，再提供已有的神经元分割。
 
-ConnectIO 将 Synful 的 PyTorch 实现放在独立的 `connectio.synapse_detection.synful_pytorch` 包中，而不是 `segmentation` 目录。模型预测突触位置概率及指向配对端点的位移向量；后续流程提取 pre/post 候选，并导出 CSV 和 WEBKNOSSOS NML 骨架。包中还包含训练、验证、TensorFlow NPZ 权重转换、可选的分割过滤及分块 NMS 工具。
+## 先预测一块能人工复核的区域
 
-Synful 与 [LSD/ACRLSD 分割流程]({{ "/zh/segmentation/" | relative_url }})分别运行。两者可以引用同一 raw 或神经元分割体积，但配置、checkpoint 和输出目录各自独立。源码包不附带原 Synful 实验数据。完整 paired checkpoint 保存在当前为 private、需授权的 [Hugging Face ConnectIO-Synful](https://huggingface.co/happyhua1/ConnectIO-Synful)，固定版本下载、校验和匹配的 `model` 参数见[模型下载]({{ "/zh/models/" | relative_url }})。导出权重用于推理或 `--init-checkpoint` 初始化，不支持精确训练 `--resume`。
+按[权重与推理配置]({{ "/zh/models/" | relative_url }})用配对权重生成 `runs/synful/synful.json`，并执行 `inspect --inference-only`。普通 Zarr 或 HDF5 原图按三维 **ZYX** 排列，体素间距和物理原点也按 ZYX 填写，单位为 nm。使用 XYZ 转换器的输出时，先核对真实轴序。Synful 的相对路径从运行命令的工作目录解析。WEBKNOSSOS 数据的图层坐标见 [Zarr 格式与坐标]({{ "/zh/zarr/" | relative_url }})。
 
-## 1. 安装
-
-Synful 已收录于 [ConnectIO 主分支](https://github.com/Happ1Hua/ConnectIO/tree/main)：
+把示例中的 ROI 换成原图内的区域。起点和范围均按**纳米**填写，并与体素网格对齐。示例使用 CUDA，从登录节点运行时默认提交 Slurm。在工作站上加 `--backend local`。
 
 ```bash
-git clone https://github.com/Happ1Hua/ConnectIO.git
-cd ConnectIO
-python -m pip install -e '.[synful-pytorch]'
-connectio-synful --help
-```
-
-请选择与显卡和驱动兼容的 PyTorch 环境。`synful-pytorch` extra 安装 Python 依赖，但不替用户选择 CUDA 构建，也不自动申请 GPU 作业。正式训练、全体积推理和 GPU 验证应在已分配资源的计算节点执行；CPU 更适合小 ROI 流程检查。
-
-如果命令行脚本不可用，也可运行 `python -m connectio.synapse_detection.synful_pytorch`。原先导入 `connectio.segmentation.synful_pytorch` 的脚本需要改为新路径；`connectio-synful` 命令名保持不变。
-
-## 2. 准备输入和配置
-
-只做预训练推理时，优先按[模型配置指南]({{ "/zh/models/" | relative_url }})生成不需要 GT 的配置，再运行 `inspect --inference-only`；模型参数会自动读取。下面的通用示例用于训练或自定义网络。
-
-复制[仓库中的示例 JSON](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)：
-
-```bash
-cp connectio/synapse_detection/configs/synful.example.json my-synful.json
-```
-
-示例路径和 ROI 都是占位值，执行 `inspect` 前必须修改。当前实现以**命令执行时的工作目录**解析相对输入和输出路径；Slurm 脚本从不同目录启动时，绝对路径更稳妥。示例使用的 `my-synful.json` 和 `synful-results/` 已加入 `.gitignore`。
-
-| JSON 字段 | 用途 | 使用前检查 |
-|---|---|---|
-| `data.gt_file` | 监督训练与验证所用的 HDF5 GT crop | 包含 raw、神经元标签及 CREMI 突触标注。 |
-| `data.inference_file` | 待预测的 HDF5 或 Zarr raw 体积 | `raw_dataset` 对应三维 ZYX 数据。 |
-| `data.raw_dataset` | 两份输入中的 raw 数据集键 | 例如 `volumes/raw`。 |
-| `data.labels_dataset` | GT 文件中的神经元 ID 数据集键 | 例如 `volumes/labels/neuron_ids`。 |
-| `splits.train` / `splits.validation` | 两个 GT ROI 的 `offset_nm`、`shape_nm` | 使用绝对 ZYX 纳米坐标；ROI 位于标签体积内，且包含标注的 post 端点。 |
-| `model` | 网络宽度、输出头数、下采样因子 | 恢复训练和验证时必须与 checkpoint 网络结构相同。 |
-| `training` | 输入形状、损失、增强、优化器、输出及保存周期 | 输入形状必须满足 valid convolution 与池化网格要求。 |
-| `inference` | 推理输入 tile、输出目录、可选 AMP | 更换权重、raw、ROI 或 tile 后使用新输出目录。 |
-| `extraction` | CC/NMS、阈值、分块形状及上下文 | CC 与 NMS 的 score 含义不同。 |
-| `export` | WEBKNOSSOS 数据集名称与 XYZ 轴映射 | 对照目标数据集核对体素大小、原点和轴方向。 |
-| `postprocessing`（可选） | 神经元分割体积及配对过滤 | 不配置时直接导出未过滤候选。 |
-
-输入体积必须是三维，数据集属性 `resolution` 为三个正数，表示 ZYX 体素大小（纳米）。`offset` 也是 ZYX 纳米坐标；缺失时按零处理。无符号整数 raw 会自动归一化；浮点 raw 必须已经位于 `[0, 1]`。GT HDF5 还需有 `annotations/ids`、`annotations/locations` 和 `annotations/presynaptic_site/partners`；标注坐标会叠加 `annotations` group 中的 offset。
-
-先检查体积、标注、ROI 内 post 数量和网络输出形状：
-
-```bash
-connectio-synful inspect --config my-synful.json
-```
-
-`inspect` 会实际打开 GT 和推理输入，并不是脱离数据的 dry run；任何占位路径或缺失的数据集都会报错。
-
-## 3. 从头训练与续训
-
-在已分配 GPU 的节点上运行：
-
-```bash
-connectio-synful train --config my-synful.json --device cuda --steps 100
-```
-
-100 步只用于检查流程，不能代表模型收敛。`--steps` 表示**本次额外运行的步数**；不指定时按 `training.max_steps` 训练。训练从 GT crop 采样 raw 和标签，生成 indicator 与位移监督目标，按配置增强，并按 `training.validation_every` 检查 validation split。
-
-训练目录包含 `config.json`、`metrics.jsonl`、`latest.pt` 及定期保存的 `step_XXXXXXX.pt`。不指定 `--resume` 时，如果目录中已有 `latest.pt`，训练会拒绝复用。继续同一次训练：
-
-```bash
-connectio-synful train --config my-synful.json --device cuda \
-  --resume synful-results/training/latest.pt --steps 100
-```
-
-续训恢复模型、优化器、scaler、步数和保存的 PyTorch RNG 状态。模型、数据、split 和指定的训练语义必须与 checkpoint 相容；独立实验请换输出目录。
-
-Python API 提供 `train(config, init_checkpoint=...)`，CLI 提供 `--init-checkpoint`，可在新输出目录中仅加载初始权重。`--resume` 是完整续训，不是“仅加载权重”的微调开关。
-
-## 4. 先检查 ROI，再运行全体积推理
-
-`predict` 需要同时包含 indicator 与 partner-vector 输出的已训练 checkpoint。先指定一个在 raw 内、与体素网格对齐的小 ROI；offset 和 shape 均为 ZYX 纳米：
-
-```bash
-connectio-synful predict --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda \
+connectio-synful predict --config runs/synful/synful.json --device cuda \
   --roi-offset-nm 0 0 0 --roi-shape-nm 512 1024 1024 \
   --output-dir synful-results/roi-check
 ```
 
-上面的 ROI 数字只是命令格式示例，应替换为你的数据范围。两个 ROI 参数必须同时提供。`--max-blocks 1` 可在写入首块后停止，适合控制流程检查；此时预测仍未完成，不能提取，需用同一输入继续 `predict`。全体积推理则省略 ROI 参数：
+完成后，打开 `synful-results/roi-check` 下的 `prediction.zarr`。`volumes/pred_syn_indicator` 为突触后位点概率场，`volumes/pred_partner_vectors` 为以 nm 表示的位移场，二者均为 float32。只想验证读写时，可加 `--max-blocks 1` 试一块；之后用同一 ROI、同一输出目录继续至完整预测。变更权重、分块或原图时请用新输出目录。
+
+## 提取配对并核对位置
+
+将 `export.dataset` 填为目标 WEBKNOSSOS 数据集名。提取时沿用刚才 ROI 的输出目录：
 
 ```bash
-connectio-synful predict --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda
+connectio-synful extract --config runs/synful/synful.json \
+  --output-dir synful-results/roi-check
 ```
 
-输出包括 `prediction.zarr` 中的 `volumes/pred_syn_indicator`（float32 概率）和 `volumes/pred_partner_vectors`（float32 纳米位移），以及 `prediction.sqlite` 和锁文件。预测保留 `resolution`、`offset` 元数据；两个数组都写入后才把该块记录为完成。同一输出目录和签名重复运行时会跳过完成块。签名包含输入路径与几何信息、checkpoint 哈希、tile、ROI、halo 和量化设置；改变这些条件后须使用新目录。
-
-`run` 在预测全部完成后，继续做提取和导出：
+`synapses/synapses.npz` 保存候选 ID、分数和两端位置。导出的 `03.synapses.csv` 在列名中标明坐标（`pre_z_nm` 至 `post_x_nm`）。`06.synapses.nml` 中一棵树代表一对端点，有两个节点和一条边。先找一个容易辨认的位置，在 WEBKNOSSOS 里对照原图。NML 使用**倍率 1 的 XYZ 整数体素坐标**。若叠加后有旋转或平移，逐项核对 `export.axis_order`、体素大小和 `export.origin_nm_xyz`。已有 CSV 也可单独转换：
 
 ```bash
-connectio-synful run --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda
+python -m connectio.synapse_detection.synful_pytorch.io.nml \
+  --csv synful-results/roi-check/03.synapses.csv \
+  --output synful-results/roi-check/review.nml \
+  --dataset YOUR_WEBKNOSSOS_DATASET \
+  --voxel-size-xyz 8 8 8 --axis-order xyz
 ```
-
-预测未完成时，`run` 不执行导出；使用 `--max-blocks` 提前停止也一样。
-
-## 5. 提取、过滤和导出
-
-已有完整预测场时，无需重跑网络：
-
-```bash
-connectio-synful extract --config my-synful.json
-```
-
-命令读取 `inference.output_dir/prediction.zarr`，定位 post 端点并按位移场找到 pre 端点，写出 `synapses/synapses.npz`。NPZ 保存候选 ID、配对位置、score、体素大小和 offset；`synapses/` 中另有提取进度的 SQLite 文件。
 
 | `extraction` 参数 | 行为 |
 |---|---|
@@ -133,40 +51,35 @@ connectio-synful extract --config my-synful.json
 | `block_shape` | 提取核心区域大小，单位为 ZYX 体素。 |
 | `min_distance_nm` | 允许的最短 pre/post 距离。 |
 
-CC 的概率和阈值不能直接用于 NMS 峰值概率。如果 CC 到达 halo 边界，应增大 `extraction.context_nm`，并换用新的提取目录或结果目录。提取签名绑定预测数据和提取参数。
+连通域和峰值检测的分数含义不同，应分别选阈值。若需按神经元标签过滤、去除邻近重复点，填写 `postprocessing.segmentation_file`、`segmentation_dataset` 和 `distance_threshold_nm`。将 `04.filtered_synapses.csv` 与原候选及 `export_report.json` 一起看。扩大到整个体积时，去掉两个 ROI 参数并另选输出目录。`connectio-synful run` 会依次完成预测、提取和导出。
 
-默认导出在推理目录生成 `03.synapses.csv`、`06.synapses.nml` 和 `export_report.json`。配置可选 `postprocessing` 时，还会查询端点的神经元标签、移除邻近重复候选，并生成 `04.filtered_synapses.csv` 与 `06.filtered_synapses.nml`。该 section 需要 `segmentation_file`、`segmentation_dataset`、`distance_threshold_nm`；分割体积必须覆盖候选，物理坐标应与 raw 一致。
+## 用带标注的区域训练
 
-## 6. 坐标与 WEBKNOSSOS
-
-Synful 内部使用 **ZYX 顺序的纳米坐标**。候选 CSV 显式包含 `pre_z_nm`、`pre_y_nm`、`pre_x_nm`、`post_z_nm`、`post_y_nm`、`post_x_nm`。NML 中每对突触为一个 tree、两个 node 和一条 edge；node 坐标是非负整数的 mag-1 **XYZ 体素坐标**。非有限、负数或未对齐体素网格的点会被拒绝。
-
-`export.axis_order` 指定 NML 输出 XYZ 各轴分别取自原坐标的哪个轴。示例默认 `xyz`，部分数据集需要 `zyx`。导入前务必与目标 WEBKNOSSOS 数据集方向核对，尤其要叠加已知点检查。NML 的 scale 取自 raw 体积的体素大小；若目标数据集使用非零物理原点，应明确设置 `export.origin_nm_xyz` 并验证。NML 只含骨架，不附带 raw 或分割体积。
-
-也可以单独把 CSV 转换为 NML：
+复制 `connectio/synapse_detection/configs/synful.example.json` 为 `my-synful.json`。准备含原图、神经元标签和 CREMI 配对标注的 HDF5。标注项为 `annotations/ids`、`annotations/locations` 和 `annotations/presynaptic_site/partners`。按绝对 ZYX 纳米坐标设置 `splits.train` 和 `splits.validation`，先查看各区域内的标注数，再开始训练。
 
 ```bash
-python -m connectio.synapse_detection.synful_pytorch.io.nml \
-  --csv synful-results/inference/03.synapses.csv \
-  --output synful-results/inference/review.nml \
-  --dataset YOUR_WEBKNOSSOS_DATASET \
-  --voxel-size-xyz 8 8 8 --axis-order xyz
+connectio-synful inspect --config my-synful.json
 ```
 
-只有明确知道输入语义后，才使用 `--origin-nm-xyz`、`--schema` 或 `--score-threshold`。单独转换命令默认不覆盖已存在的 NML；确需重新生成时指定 `--overwrite`。
+```bash
+connectio-synful train --config my-synful.json --device cuda --steps 100
+```
 
-## 7. 验证与指标解释
+训练目录包含 `metrics.jsonl`、`latest.pt` 和定期保存的 checkpoint。`--steps` 是本次额外运行的步数。只加载已有权重微调时，在新目录使用 `--init-checkpoint`。接着原有优化器和采样进度训练，再评估留出区，可用下面两条命令：
+
+```bash
+connectio-synful train --config my-synful.json --device cuda \
+  --resume synful-results/training/latest.pt --steps 100
+```
 
 ```bash
 connectio-synful validate --config my-synful.json \
   --checkpoint synful-results/training/latest.pt --device cuda
 ```
 
-验证在 GT 的 `validation` ROI 上预测和提取，并将 `metrics.json` 写到 `training.output_dir/validation/<checkpoint-hash>/`。指标包括 TP、FP、FN、precision、recall、F1 和 pre/post 平均端点误差。配对成功要求**两个端点**都在匹配距离内；Python API 默认 400 nm。匹配依据是端点距离，不检查神经元 ID。结果只说明该 GT ROI 的表现；如果旧权重与该区域有训练重叠，不能视作独立测试成绩。
+验证报告给出留出区的精确率、召回率、F1 和端点距离误差。前后两端都在容差内才算匹配。在 `tests/synful_real` 的一次流程测试中，验证块内有 5 对标注；两步训练后命中 1 对，误检 0 对，漏检 4 对。这组数据用于检查输入到导出的链路，历史权重可能与标注区域有重叠。[测试步骤与记录](https://github.com/Happ1Hua/ConnectIO/tree/main/tests/synful_real)
 
-将原 TensorFlow 权重先导出到 NPZ 后，可运行 `connectio-synful convert-tf --weights-npz WEIGHTS.npz --checkpoint OUTPUT.pt --config my-synful.json` 转换一个兼容网络。只有 indicator 或只有 vector 的单任务 checkpoint 无法完成配对推理；旧版两个独立网络应组成保留双方权重的 paired checkpoint。
-
-## 8. 常见报错
+## 提取或导出报错时
 
 | 报错或现象 | 处理方式 |
 |---|---|
@@ -178,18 +91,3 @@ connectio-synful validate --config my-synful.json \
 | “CC exceeds extraction halo” | 增大 `extraction.context_nm`，并改用新的提取目录。 |
 | NML “Off-grid/negative/nonfinite coordinate” | 核对 raw 体素大小、原点、轴映射及候选坐标。 |
 | NML 在查看器中旋转或偏移 | 同时核对 `export.axis_order`、`export.origin_nm_xyz`、raw 的 `resolution`/`offset` 和 WEBKNOSSOS 数据集元数据。 |
-
-## 9. 复现真实数据整合测试
-
-[按步骤保留的测试脚本](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-real-data-tests/tests/synful_real)依次完成预检与 `inspect`、两步微调及续训、raw Zarr 部分推理与续推、提取、带神经元分割过滤的 CSV/NML 导出、留出 ROI 验证和产物检查。输入只读；数据路径、日志、checkpoint 和预测结果保存在 Git 忽略的 `tests/workspaces/synful_real/`。脚本需要可访问的真实 HDF5 标注、raw/segmentation Zarr 与兼容的 paired checkpoint，不会下载或公开这些数据。训练和推理可选择工作站 local 或 Slurm 计算节点。
-
-[E1Sp5D3 实测记录](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md)使用分别选定的两个真实小 ROI：全量 raw 已知阳性 ROI 提取 7 对，经分割过滤保留 6 对；GT 总计 274 对，选定验证 ROI 有 5 对，两步微调后得到 TP=1、FP=0、FN=4（F1≈0.333）。验证产生的 1 个候选可导出非空、含 1 棵树、2 个节点和 1 条边的 NML，但神经元分割过滤将其剔除。两份原始 TensorFlow NPZ 均成功转换，每个模型的 38 个张量与 paired checkpoint 对应张量完全一致。GT crop 到全量 raw 的坐标变换尚未确认，历史 checkpoint 与 GT 也可能重叠。这些是**流程功能测试结果**，不是独立测试集或全体积精度估计，更不代表候选经过生物学审查。
-
-[源码包说明](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md)和[示例配置](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json)可配合本页使用。
-
-2026-10-04 的训练恢复、输入/输出身份、流式重采样、评估内存与推理流水线更新，详见[代码优化与资源控制]({{ "/zh/optimization/" | relative_url }})。
-
-
-## Zarr2 / Zarr3（26.10.28）
-
-体数据读写支持两种格式，新输出默认仍为 Zarr2。使用 `zarr_format=3`、`--zarr-format 3`，或模型配置顶层 `"zarr_format": 3` 创建新 Zarr3 存储。功能范围、坐标和验证见 [双格式兼容说明]({{ "/zh/zarr/" | relative_url }}）。

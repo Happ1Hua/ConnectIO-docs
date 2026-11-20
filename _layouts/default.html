@@ -3,22 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if page.title %}{{ page.title }} · {% endif %}ConnectIO</title>
-  <meta name="description" content="{{ page.description | default: site.description }}">
+  <title>{{ page.title | escape }} · ConnectIO</title>
   <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
 </head>
 <body>
-  <header class="site-header">
-    <a class="brand" href="{{ '/' | relative_url }}">ConnectIO <small>26.11.05</small></a>
-    <nav>
-      {% if page.lang == 'zh' %}
-      <a href="{{ '/zh/' | relative_url }}">文档</a><a href="{{ '/zh/pipeline/' | relative_url }}">流程</a><a href="{{ '/zh/segmentation/' | relative_url }}">分割</a><a href="{{ '/zh/synful/' | relative_url }}">Synful</a><a href="{{ '/zh/mito/' | relative_url }}">Mito</a><a href="{{ '/zh/models/' | relative_url }}">模型</a><a href="{{ '/zh/optimization/' | relative_url }}">优化</a><a href="{{ '/zh/zarr/' | relative_url }}">Zarr2/3</a><a href="{{ '/zh/slurm/' | relative_url }}">Slurm</a><a href="{{ '/en/' | relative_url }}">English</a>
-      {% else %}
-      <a href="{{ '/en/' | relative_url }}">Docs</a><a href="{{ '/en/pipeline/' | relative_url }}">Pipeline</a><a href="{{ '/en/segmentation/' | relative_url }}">Segmentation</a><a href="{{ '/en/synful/' | relative_url }}">Synful</a><a href="{{ '/en/mito/' | relative_url }}">Mito</a><a href="{{ '/en/models/' | relative_url }}">Models</a><a href="{{ '/en/optimization/' | relative_url }}">Optimization</a><a href="{{ '/en/zarr/' | relative_url }}">Zarr2/3</a><a href="{{ '/en/slurm/' | relative_url }}">Slurm</a><a href="{{ '/zh/' | relative_url }}">中文</a>
-      {% endif %}
-    </nav>
+  {% if page.lang == 'zh' %}
+    {% assign home = '/zh/' %}{% assign other_home = '/en/' %}{% assign other = 'en' %}{% assign switch = 'English' %}{% assign contents = '文档目录' %}{% assign skip = '跳到正文' %}
+  {% else %}
+    {% assign home = '/en/' %}{% assign other_home = '/zh/' %}{% assign other = 'zh' %}{% assign switch = '中文' %}{% assign contents = 'Contents' %}{% assign skip = 'Skip to content' %}
+  {% endif %}
+  <a href="#main" class="skip">{{ skip }}</a>
+  <header class="masthead">
+    <a class="brand" href="{% if page.lang %}{{ home | relative_url }}{% else %}{{ '/' | relative_url }}{% endif %}">ConnectIO</a>
+    {% if page.lang %}<a class="language" lang="{{ other }}" hreflang="{{ other }}" href="{{ page.url | replace_first: home, other_home | relative_url }}">{{ switch }}</a>{% endif %}
   </header>
-  <main>{{ content }}</main>
-  <footer>ConnectIO · Documentation version 26.11.05</footer>
+  {% if page.lang %}
+  {% capture chapters %}
+    {% for group in site.data.navigation %}
+      <p class="group-name">{{ group[page.lang] }}</p>
+      <ul>
+        {% for slug in group.pages %}
+          {% assign path = home %}
+          {% unless slug == 'index' %}{% assign path = home | append: slug | append: '/' %}{% endunless %}
+          {% assign chapter = site.pages | where: 'url', path | first %}
+          <li><a href="{{ path | relative_url }}"{% if page.url == path %} aria-current="page"{% endif %}>{{ chapter.title | escape }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  {% endcapture %}
+  <div class="book">
+    <nav aria-label="{{ contents }}">
+      <div class="desktop-chapters">{{ chapters }}</div>
+      <details class="mobile-chapters"><summary>{{ contents }}</summary>{{ chapters }}</details>
+    </nav>
+    <main id="main">{{ content }}</main>
+  </div>
+  {% else %}
+  <main class="landing" id="main">{{ content }}</main>
+  {% endif %}
 </body>
 </html>

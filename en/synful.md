@@ -1,128 +1,46 @@
 ---
 layout: default
-title: Synful PyTorch
+title: Synapse detection
 lang: en
 permalink: /en/synful/
 ---
 
-# Synful PyTorch: synapse partner detection
+# Detect synaptic partners with Synful
 
-This CLI uses the common execution policy: `--backend local` runs on a workstation and `--backend slurm` submits a job. Set `export CONNECTIO_EXECUTION_BACKEND=local` to run the commands below locally by default. Otherwise Slurm is the default; help never submits. See [local and Slurm execution]({{ "/en/slurm/" | relative_url }}).
+Starting from raw EM and paired indicator/vector weights, Synful predicts a postsynaptic site and a displacement to its presynaptic partner. The result you review is a pair of points. A neuron segmentation is optional and can filter the candidates after detection.
 
-ConnectIO provides the PyTorch Synful pipeline as `connectio.synapse_detection.synful_pytorch`, under its own `synapse_detection` package rather than `segmentation`. It predicts a postsynaptic indicator and a partner displacement vector, extracts candidate pre/post pairs, and exports CSV and WEBKNOSSOS NML skeletons. The package also provides training, checkpoint validation, TensorFlow NPZ weight conversion, optional segmentation filtering, and blockwise NMS utilities.
+## Predict a region you can review
 
-This is separate from the [LSD/ACRLSD segmentation pipeline]({{ "/en/segmentation/" | relative_url }}). The two workflows may share the same raw and neuron segmentation volumes, but Synful uses its own configuration, checkpoints, and output directory. Original Synful experiment data is not bundled with the source. The complete paired checkpoint is hosted in the currently private [ConnectIO-Synful on Hugging Face](https://huggingface.co/happyhua1/ConnectIO-Synful); see [model downloads]({{ "/en/models/" | relative_url }}) for revision-pinned downloads, verification and the matching `model` configuration. The exported checkpoint supports inference or `--init-checkpoint`, not exact training `--resume`.
+Generate `runs/synful/synful.json` with the paired checkpoint and `inspect --inference-only` as described in [weights and inference configs]({{ "/en/models/" | relative_url }}). Plain Zarr and HDF5 raw are 3D **ZYX**. Spacing and physical origin follow the same order in nm. Check these before using raw from an XYZ converter. Relative Synful paths resolve from the working directory. For WEBKNOSSOS input, see [layer coordinates]({{ "/en/zarr/" | relative_url }}).
 
-## 1. Install the integration
-
-Synful is available on [ConnectIO main](https://github.com/Happ1Hua/ConnectIO/tree/main):
+Replace the example ROI with one inside your volume. Both offset and extent are in **nanometres**, aligned to the voxel grid. The example uses CUDA. The CLI defaults to Slurm outside an allocation. To run on your workstation add `--backend local`.
 
 ```bash
-git clone https://github.com/Happ1Hua/ConnectIO.git
-cd ConnectIO
-python -m pip install -e '.[synful-pytorch]'
-connectio-synful --help
-```
-
-Use a Python environment with a PyTorch build appropriate for your accelerator and driver. The `synful-pytorch` extra installs the package dependencies; it does not select a CUDA build or submit a GPU job. Training, full-volume inference, and GPU validation should run in an allocated compute session. A CPU run is useful for a small test ROI but can be slow for production volumes.
-
-The source package can also be invoked as `python -m connectio.synapse_detection.synful_pytorch` if a console script is unavailable. Existing scripts that imported `connectio.segmentation.synful_pytorch` must update that import path; the `connectio-synful` command name is unchanged.
-
-## 2. Prepare the data and configuration
-
-For pretrained inference, use the [model configuration guide]({{ "/en/models/" | relative_url }}) to generate a GT-free config and run `inspect --inference-only`. Network parameters are read automatically. The generic example below is for training or a custom network.
-
-Copy the [packaged example JSON](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json):
-
-```bash
-cp connectio/synapse_detection/configs/synful.example.json my-synful.json
-```
-
-The example contains placeholder paths and ROIs. Change them before running `inspect` or training. Relative data and output paths are resolved from the **current working directory** by the current Synful implementation; an absolute path is safer when launching from Slurm scripts. The example's `synful-results/` directory and `my-synful.json` are ignored by Git.
-
-| JSON section | Required meaning | Checks to make |
-|---|---|---|
-| `data.gt_file` | HDF5 ground-truth crop for supervised training and validation | Contains raw, neuron labels, and CREMI synapse annotations. |
-| `data.inference_file` | HDF5 or Zarr raw volume to predict | `raw_dataset` must exist and describe a 3D ZYX volume. |
-| `data.raw_dataset` | Raw dataset key in both inputs | Example: `volumes/raw`. |
-| `data.labels_dataset` | Neuron-ID dataset key in the GT file | Example: `volumes/labels/neuron_ids`. |
-| `splits.train` / `splits.validation` | `offset_nm` and `shape_nm` for two GT ROIs | Use absolute ZYX nanometres; each ROI must fit inside the label volume and contain annotated postsynaptic points. |
-| `model` | Network width, heads, downsampling factors | Keep identical to the checkpoint architecture when resuming or validating. |
-| `training` | Input shape, loss, augmentation, optimizer, output and checkpoint schedule | The input shape must satisfy valid convolutions and pooling alignment. |
-| `inference` | Input tile, output directory, optional AMP | Choose a new output directory for a different checkpoint, raw volume, ROI, or tile shape. |
-| `extraction` | CC or NMS method, thresholds, block shape, context | Scores have different meanings for CC and NMS. |
-| `export` | WEBKNOSSOS dataset name and XYZ axis mapping | Verify the target dataset's voxel size, origin, and axis convention. |
-| `postprocessing` (optional) | Segmentation volume and pair filtering | Omit this section to export unfiltered candidates. |
-
-Each input volume must be 3D and have a `resolution` attribute containing positive ZYX voxel sizes in nanometres. `offset` is an optional ZYX nanometre attribute; if absent, the implementation uses zero. Floating-point raw data must already be in `[0, 1]`; unsigned integer raw data is normalized automatically. The GT HDF5 file additionally needs `annotations/ids`, `annotations/locations`, and `annotations/presynaptic_site/partners`. Annotation offsets are read from the `annotations` group.
-
-First inspect the configured volumes, annotations, split counts, and model output shapes:
-
-```bash
-connectio-synful inspect --config my-synful.json
-```
-
-`inspect` opens the configured GT and inference inputs. It is an input check, not a synthetic-data dry run; it fails if a placeholder path or required dataset remains.
-
-## 3. Train or resume
-
-Train from random initialization inside a GPU allocation:
-
-```bash
-connectio-synful train --config my-synful.json --device cuda --steps 100
-```
-
-The short run checks the training path; 100 steps do not establish model quality. `--steps` means **additional steps in this invocation**. Without it, training runs until `training.max_steps`. Training samples raw and labels from the GT crop, builds indicator and vector targets, applies the configured augmentation, and checks the validation split at `training.validation_every`.
-
-The training directory contains `config.json`, `metrics.jsonl`, `latest.pt`, and periodic `step_XXXXXXX.pt` checkpoints. A run without `--resume` refuses to reuse a directory that already contains `latest.pt`. To continue the same run:
-
-```bash
-connectio-synful train --config my-synful.json --device cuda \
-  --resume synful-results/training/latest.pt --steps 100
-```
-
-Resume restores model weights, optimizer, scaler, step, and the saved PyTorch RNG state. The model, data, splits, and specified training semantics must match the checkpoint. Use a new output directory for an independent run.
-
-The Python API supports `train(config, init_checkpoint=...)` and the CLI supports `--init-checkpoint` for weights-only initialization into a new output directory. `--resume` continues a training run; it is not a weights-only fine-tune switch.
-
-## 4. Predict a small ROI, then a volume
-
-`predict` requires a trained checkpoint with both indicator and partner-vector outputs. To check an ROI first, provide its ZYX offset and shape in nanometres:
-
-```bash
-connectio-synful predict --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda \
+connectio-synful predict --config runs/synful/synful.json --device cuda \
   --roi-offset-nm 0 0 0 --roi-shape-nm 512 1024 1024 \
   --output-dir synful-results/roi-check
 ```
 
-Replace the ROI with one inside your raw volume and aligned to its voxel grid. Both ROI flags are required together. `--max-blocks 1` can stop after a first block for a pipeline check; the result is incomplete and cannot be extracted until `predict` resumes and finishes. To predict the configured full volume, omit both ROI flags:
+Wait for completion. Open `prediction.zarr` under `synful-results/roi-check`. The array `volumes/pred_syn_indicator` contains postsynaptic probabilities and `volumes/pred_partner_vectors` contains vectors in nm. Both are float32. For a one-block I/O trial, add `--max-blocks 1`. Rerun with the same ROI and output path to finish. A change to the checkpoint, tile or raw requires a fresh output.
+
+## Extract pairs and check their coordinates
+
+Set `export.dataset` to the target WEBKNOSSOS dataset name. Extract from the same output directory used for the ROI:
 
 ```bash
-connectio-synful predict --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda
+connectio-synful extract --config runs/synful/synful.json \
+  --output-dir synful-results/roi-check
 ```
 
-Prediction writes `prediction.zarr` with `volumes/pred_syn_indicator` (float32 probability) and `volumes/pred_partner_vectors` (float32 nanometre vectors), plus `prediction.sqlite` and its lock file. Spatial `resolution` and `offset` metadata are retained. A block is recorded as complete only after both arrays are written. Repeating the command with the same output and signature skips completed blocks. The signature includes the source path and geometry, checkpoint hash, input tile, ROI, halo, and quantization mode. A changed signature requires a new output directory.
-
-The `run` command performs prediction and, once complete, extraction and export in one invocation:
+Open `synapses/synapses.npz` for the candidate IDs, scores and endpoint positions. The exported `03.synapses.csv` labels its coordinates explicitly (`pre_z_nm` through `post_x_nm`). In `06.synapses.nml` each tree is one pair with two nodes and one edge. Check one point against a landmark in WEBKNOSSOS. NML uses integer **XYZ voxels at magnification 1**. Verify `export.axis_order`, voxel size and `export.origin_nm_xyz` if the overlay appears rotated or shifted. For standalone conversion:
 
 ```bash
-connectio-synful run --config my-synful.json \
-  --checkpoint synful-results/training/latest.pt --device cuda
+python -m connectio.synapse_detection.synful_pytorch.io.nml \
+  --csv synful-results/roi-check/03.synapses.csv \
+  --output synful-results/roi-check/review.nml \
+  --dataset YOUR_WEBKNOSSOS_DATASET \
+  --voxel-size-xyz 8 8 8 --axis-order xyz
 ```
-
-`run` does not export while prediction is incomplete, including when `--max-blocks` stops it early.
-
-## 5. Extract candidates and export
-
-To process an already complete prediction without rerunning the network:
-
-```bash
-connectio-synful extract --config my-synful.json
-```
-
-The command reads `inference.output_dir/prediction.zarr`, detects postsynaptic sites, samples the predicted vectors to locate presynaptic partners, and writes `synapses/synapses.npz`. The NPZ contains candidate IDs, paired positions, scores, voxel size, and offset. Extraction uses its own SQLite completion record in the `synapses/` directory.
 
 | `extraction` setting | Effect |
 |---|---|
@@ -133,40 +51,35 @@ The command reads `inference.output_dir/prediction.zarr`, detects postsynaptic s
 | `block_shape` | Extraction core in ZYX voxels. |
 | `min_distance_nm` | Minimum accepted pre/post distance. |
 
-Do not reuse a CC sum-score threshold for NMS peak probabilities. If a CC reaches a halo edge, increase `context_nm` and choose a new extraction output directory or run directory. The extraction signature binds results to the prediction and extraction settings.
+Choose score thresholds separately for CC and NMS. `postprocessing.segmentation_file`, `segmentation_dataset` and `distance_threshold_nm` enable neuron-label and duplicate filtering. Review `04.filtered_synapses.csv` alongside the original candidates and `export_report.json`. For a full volume, omit both ROI flags and use a new output directory. `connectio-synful run` performs prediction, extraction and export in sequence.
 
-By default, export writes `03.synapses.csv` and `06.synapses.nml` next to the prediction, plus `export_report.json`. If `postprocessing` is configured, it also checks endpoint neuron labels, removes nearby duplicates, and writes `04.filtered_synapses.csv` and `06.filtered_synapses.nml`. The optional section needs `segmentation_file`, `segmentation_dataset`, and `distance_threshold_nm`; the segmentation must cover the candidates and use compatible physical coordinates.
+## Train on an annotated crop
 
-## 6. Coordinates and WEBKNOSSOS delivery
-
-Synful's internal order is **ZYX in nanometres**. Candidate CSV columns are explicitly named `pre_z_nm`, `pre_y_nm`, `pre_x_nm`, `post_z_nm`, `post_y_nm`, and `post_x_nm`. In the exported NML, each pair becomes one tree with two nodes and one edge. NML node coordinates are nonnegative, integer magnification-1 **XYZ voxel coordinates**. The exporter rejects nonfinite, negative, or off-grid positions.
-
-`export.axis_order` tells the exporter which source axis supplies each output NML axis. `xyz` is the default example; some datasets require `zyx`. Verify the mapping against the target WEBKNOSSOS dataset and its image orientation before importing. The NML scale comes from the raw volume's voxel-size metadata. If the dataset has a nonzero physical origin, set `export.origin_nm_xyz` deliberately and verify a known point. The NML is a skeleton annotation; it does not contain the raw volume or segmentation.
-
-For standalone CSV-to-NML conversion, the package also exposes:
+Copy `connectio/synapse_detection/configs/synful.example.json` to `my-synful.json`. Supply an HDF5 crop with raw, neuron labels and CREMI `annotations/ids`, `annotations/locations` and `annotations/presynaptic_site/partners`. Set `splits.train` and `splits.validation` in absolute ZYX nm. Inspect the split counts before starting.
 
 ```bash
-python -m connectio.synapse_detection.synful_pytorch.io.nml \
-  --csv synful-results/inference/03.synapses.csv \
-  --output synful-results/inference/review.nml \
-  --dataset YOUR_WEBKNOSSOS_DATASET \
-  --voxel-size-xyz 8 8 8 --axis-order xyz
+connectio-synful inspect --config my-synful.json
 ```
 
-Use `--origin-nm-xyz`, `--schema`, or `--score-threshold` only when their meanings are known for your input. Existing NML files are protected from overwrite by this standalone command unless `--overwrite` is supplied.
+```bash
+connectio-synful train --config my-synful.json --device cuda --steps 100
+```
 
-## 7. Validate and interpret results
+The training directory holds `metrics.jsonl`, `latest.pt` and periodic checkpoints. `--steps` counts additional steps. Use `--init-checkpoint` in a fresh directory for weights-only fine-tuning. To resume the optimizer and sample sequence:
+
+```bash
+connectio-synful train --config my-synful.json --device cuda \
+  --resume synful-results/training/latest.pt --steps 100
+```
 
 ```bash
 connectio-synful validate --config my-synful.json \
   --checkpoint synful-results/training/latest.pt --device cuda
 ```
 
-Validation predicts the configured GT `validation` ROI, extracts candidates, and writes `metrics.json` below `training.output_dir/validation/<checkpoint-hash>/`. It reports TP, FP, FN, precision, recall, F1, and average pre/post endpoint errors. A match requires **both** endpoints to fall within the matching distance (400 nm by default in the API); matching uses endpoint distance, not neuron IDs. These numbers describe the configured GT ROI. Check for overlap with training data before treating them as independent test results.
+Validation reports precision, recall, F1 and endpoint errors for the configured holdout. Matching requires both endpoints within the tolerance. In the recorded `tests/synful_real` check, the validation ROI contained five annotated pairs. After two training steps there was one true positive, no false positives and four false negatives. This small run checks the data path and export. The checkpoint may overlap the annotated region. [Test procedure and results](https://github.com/Happ1Hua/ConnectIO/tree/main/tests/synful_real)
 
-Legacy TensorFlow weights exported to NPZ can be converted with `connectio-synful convert-tf --weights-npz WEIGHTS.npz --checkpoint OUTPUT.pt --config my-synful.json`. This converts one compatible model. A checkpoint containing only an indicator or only a vector model cannot drive paired inference; independently trained legacy models require a properly constructed paired checkpoint that keeps both networks.
-
-## 8. Common failures
+## If extraction or export stops
 
 | Message or symptom | Likely cause and action |
 |---|---|
@@ -178,18 +91,3 @@ Legacy TensorFlow weights exported to NPZ can be converted with `connectio-synfu
 | “CC exceeds extraction halo” | Increase `extraction.context_nm`; use a fresh extraction directory. |
 | NML “Off-grid/negative/nonfinite coordinate” | Check raw voxel size, physical origin, axis mapping, and candidate coordinates. |
 | NML appears rotated or displaced | Check `export.axis_order`, `export.origin_nm_xyz`, raw `resolution`/`offset`, and the WEBKNOSSOS dataset metadata together. |
-
-## 9. Reproduce the real-data integration test
-
-The [numbered test scripts](https://github.com/Happ1Hua/ConnectIO/tree/codex/synful-real-data-tests/tests/synful_real) run preflight and `inspect`, two short fine-tuning steps with resume, partial and resumed raw-Zarr inference, extraction, segmentation-filtered CSV/NML export, held-out validation, and a final artifact check. Inputs are opened read-only; local data, logs, checkpoints, and predictions stay in the Git-ignored `tests/workspaces/synful_real/` directory. The scripts require an accessible annotated HDF5, raw/segmentation Zarr, and compatible paired checkpoint; they do not download or publish those datasets. Use local workstation execution or a Slurm allocation for training and inference.
-
-The [recorded E1Sp5D3 run](https://github.com/Happ1Hua/ConnectIO/blob/codex/synful-real-data-tests/tests/synful_real/RESULTS.md) used two deliberately small, independently selected real ROIs. The full-raw positive-control ROI yielded 7 candidates, 6 after segmentation filtering. The GT contained 274 pairs overall; its chosen validation ROI contained 5. After two fine-tuning steps, validation gave TP=1, FP=0, FN=4 (F1≈0.333). That validation candidate produced a nonempty unfiltered NML (one tree, two nodes, one edge), but the optional neuron-segmentation filter rejected it. The original indicator/vector TensorFlow NPZ files also converted successfully: all 38 tensors per model matched the corresponding paired-checkpoint tensors exactly. The GT-crop-to-full-raw coordinate transform is not established, and the historical checkpoint may overlap the GT region. These are functional test observations, **not** an independent or full-volume accuracy estimate or biological acceptance of candidates.
-
-The [source package guide](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/synful_pytorch/README.md) and [example configuration](https://github.com/Happ1Hua/ConnectIO/blob/main/connectio/synapse_detection/configs/synful.example.json) accompany this guide.
-
-See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.
-
-
-## Zarr2 / Zarr3 (26.10.28)
-
-Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).

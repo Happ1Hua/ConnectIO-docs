@@ -1,88 +1,52 @@
 ---
 layout: default
-title: Modules and tutorials
+title: Prepare a TIFF stack
 lang: en
 permalink: /en/modules/
 ---
 
-# Modules and tutorials
+# Prepare a TIFF stack for segmentation
 
-## Conversion and processing
+Keep the acquired slices in `source_tiffs/` and choose a separate output directory for each operation below. The example uses Slurm. Wait for each job and inspect its output before issuing the next command. On a workstation set `CONNECTIO_EXECUTION_BACKEND=local` first. The same operations are available in the [GUI workbench]({{ "/en/gui/" | relative_url }}).
 
-ConnectIO converts TIFF, PNG, TXM, HDF5, WKW, and Neuroglancer precomputed volumes to or from Zarr. Processing helpers crop, rotate, and resample Zarr volumes. Conversion functions stream data where possible and preserve spatial metadata. For a lossless TIFF conversion, verify slice order, shape, dtype, hashes or voxel equality, and write `resolution`/`offset` explicitly.
-
-## Preprocessing
-
-TIFF tools provide QC, normalization, and CLAHE. QC reports per-slice statistics, intensity trends, and candidate discontinuities without changing pixels. Normalization and CLAHE must be reviewed separately; acquisition artifacts such as local bright spots and vertical stripes should be documented rather than mistaken for processing failures. CLI entry points are `connectio-tiff-check`, `connectio-tiff-normalize`, and `connectio-tiff-clahe`.
-
-## Alignment
-
-`connectio-align` and `align_folder_pairwise` support phase correlation, ECC, and ORB registration. Pairwise transforms are accumulated to the first slice while each source image is interpolated once. Inspect cumulative drift, overlap, invalid borders, and XZ/YZ continuity. Registration scores do not replace visual review.
-
-## Visualization
-
-Neuroglancer scripts are manual Slurm launchers. Set the Zarr path and dataset, start the script, wait for its connection record, create the printed SSH tunnel locally, and open the local URL. Scalar raw data and channel-first affinity data require different shader/range handling. Viewer scripts are not compute functions and were not converted to the generic submitter.
-
-## Tutorial index
-
-Conversion/crop tutorials accept `--zarr-format 2` or `3`, defaulting to Zarr3. See [tutorial output formats]({{ "/en/zarr/" | relative_url }}).
-
-The `tutorials/` directory contains one-file examples for TIFF/PNG/TXM to Zarr, HDF5 and WKW interchange, precomputed conversion, crop, resample, rotate, NML merge, TIFF preprocessing, TIFF alignment, LSD inference, and Neuroglancer viewing. Each compute example defines `SLURM_OPTIONS`, calls the real ConnectIO function, and prints the job record. When two examples write the same Zarr, add an `afterok` dependency.
-
-The Python API can also submit an import path without importing imaging dependencies on the login node:
-
-```python
-from connectio.execution import submit_function
-
-job = submit_function(
-    "connectio.processing.crop", "crop_zarr",
-    kwargs={
-        "input_zarr_path": "in.zarr",
-        "output_zarr_path": "out.zarr",
-        "dataset_path": "volumes/raw",
-        "crop_bbox_xyz": ((0, 256), (0, 256), (0, 64)),
-    },
-    resource="cpu",
-)
-```
-
-## A reviewable TIFF workflow
-
-The TIFF preprocessing CLIs submit CPU work by default. Run one command, wait for its job to finish, review the result, and only then use its output as the next command's input:
+## Check the stack before adjusting brightness
 
 ```bash
 connectio-tiff-check --input source_tiffs --output qc
+```
+
+Open `qc/z_intensity_trends.png`. If the mean jumps at a particular slice, look up that slice in `per_slice_qc.csv` and inspect the image. Stripes confined to part of a field may still be visible after matching the overall brightness. Keep `summary.json` as a baseline.
+
+## Normalize, then choose a contrast setting
+
+```bash
 connectio-tiff-normalize --input source_tiffs --output normalized \
   --method robust-z-no-clip --z-window 21
+```
+
+Compare the processed slices in `normalized/tiffs/` with the original. The example uses a 21-slice window. If you also need local contrast enhancement, run a CLAHE pilot on this output.
+
+```bash
 connectio-tiff-clahe pilot --input normalized/tiffs --output clahe_pilot \
   --candidates 1.5:16,2.0:16,2.0:30
+```
+
+Inspect the comparison images for membrane contrast and amplified noise. The following command uses clip limit 1.5 and a 16-cell grid. Substitute the pair you selected in the pilot.
+
+```bash
 connectio-tiff-clahe apply --input normalized/tiffs --output clahe \
   --clip-limit 1.5 --grid-size 16
 ```
 
-The first command writes `summary.json`, `per_slice_qc.csv`, Z-intensity trends, and representative contact sheets. Normalization writes processed images under `normalized/tiffs/` plus per-slice gain/offset and before/after QC. `robust-z-no-clip` aims to avoid out-of-range pixels; `mean-std-clip` explicitly permits clipping and reports the count. The CLAHE `pilot` writes visual parameter comparisons without processing the full stack. The `apply` mode writes the selected full stack under `clahe/tiffs/` plus QC. The paths and parameter values above are examples; decide on a setting from the pilot and your raw-image review.
-
-To align an accepted TIFF stack:
+## Align the accepted slices
 
 ```bash
 connectio-align --input clahe/tiffs --output aligned --method phase
 ```
 
-`phase` estimates translations; `ecc` and `orb` can estimate more general transforms and fall back to phase when their result is rejected, unless `--no-fallback` is set. `aligned/alignment_report.json` records pairwise and cumulative matrices and registration metrics. Each aligned image is resampled once from its original source; inspect drift, missing borders, and XZ/YZ continuity before converting the aligned stack to Zarr. The [digspider case study]({{ "/en/case-study/" | relative_url }}) gives a concrete review example.
+Use the directory from the last step you actually ran. Phase correlation estimates translations. For more complex motion, `ecc` and `orb` are also available. Check `aligned/alignment_report.json` for cumulative drift, then inspect the borders and continuity in XZ and YZ. The aligned TIFFs are directly in `aligned/`. Use this folder as input to [TIFF-to-Zarr conversion]({{ "/en/formats/" | relative_url }}).
 
-## Volume and annotation helpers
-
-`connectio.conversion` includes TIFF, PNG, TXM, HDF5, WKW, hyperstack, and precomputed converters. `connectio.processing` includes `crop_zarr`, `rotate_zarr`, `resample_zarr`, `downsample_zarr`, `upsample_zarr`, and `merge_nml_files`. Their exact axis and overwrite behavior matters; see [formats and volume operations]({{ "/en/formats/" | relative_url }}). `connectio.alignment.emalignkit` exposes `register_pair` and `align_folder_pairwise` for Python workflows.
-
-If two submitted jobs write to the same Zarr, serialize them with an explicit dependency or wait for the first result. A submitted function returns before its output is ready. Keep one run's paths, configs, reports, and review notes together, and use distinct output paths when comparing processing choices.
-
-## Viewer workflow
-
-The viewer examples in `tutorials/neuroglancer_view_zarr.py`, `neuroglancer_view_hdf5.py`, `neuroglancer_view_synapse.py`, and `neuroglancer_view_precomputed_http.py` configure interactive Slurm services. Edit their data paths, dataset names, site login address, local/remote ports, and resource settings before running a script in an interactive terminal. The launcher prints the job ID, follows its log, and shows an SSH tunnel command. Start that tunnel on your own computer and open the printed local URL. Ctrl+C in the launcher cancels its viewer job.
-
-For large Zarr data, leave lazy viewing enabled unless the selected data can fit in the requested memory. Channel-first affinity arrays need a viewer layer or shader that selects a channel; a raw grayscale layer does not automatically display them correctly. Review known landmarks and all three orthogonal planes before accepting a coordinate mapping.
-
-## Find an example by task
+## Other scripts in the checkout
 
 | Task | Example |
 |---|---|
@@ -94,13 +58,4 @@ For large Zarr data, leave lazy viewing enabled unless the selected data can fit
 | LSD inference and viewing | `lsd_inference.py`, `neuroglancer_view_zarr.py` |
 | Skeleton annotations | `merge_nmls.py` |
 
-Several examples contain site-specific data paths and resource values. Treat them as editable templates, then inspect the submitted job record and output. [Slurm execution]({{ "/en/slurm/" | relative_url }}) explains the common submission controls.
-
-## Mito PyTorch
-
-`connectio.mito_segmentation.mito_pytorch` · `connectio-mito` · [Guide]({{ "/en/mito/" | relative_url }})
-
-
-## Zarr2 / Zarr3 (26.10.28)
-
-Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).
+The [tutorial directory](https://github.com/Happ1Hua/ConnectIO/tree/main/tutorials) contains editable examples. Set your paths and resources before running them. For Zarr, HDF5, Precomputed or synapse overlays, select the corresponding `neuroglancer_view_*` script. Follow its tunnel instructions from your computer. For channel-first affinities, check each direction separately.

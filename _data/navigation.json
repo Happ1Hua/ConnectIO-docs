@@ -1,0 +1,6 @@
+[
+  {"en": "Getting started", "zh": "开始使用", "pages": ["index", "getting-started", "gui"]},
+  {"en": "Prepare a volume", "zh": "准备体数据", "pages": ["modules", "formats", "zarr"]},
+  {"en": "Segment and detect", "zh": "分割与检测", "pages": ["models", "pipeline", "lsd-guide", "segmentation", "mito", "synful"]},
+  {"en": "Cluster and reference", "zh": "集群与参考", "pages": ["slurm", "optimization", "case-study", "audit", "changelog"]}
+]

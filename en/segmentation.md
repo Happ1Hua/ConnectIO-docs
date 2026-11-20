@@ -1,79 +1,30 @@
 ---
 layout: default
-title: Segmentation
+title: LSD training and label export
 lang: en
 permalink: /en/segmentation/
 ---
 
-# Segmentation
+# LSD training and WEBKNOSSOS export
 
-## Independent stages
+For prediction with existing weights, follow [from affinities to labels]({{ "/en/lsd-guide/" | relative_url }}). This chapter covers the training inputs and the two ways to deliver a reviewed segmentation.
 
-`connectio-segmentation-stage` is the preferred operator interface. The affinity stage runs the paired LSD and ACRLSD inference configs on one GPU allocation. The remaining stages are intentionally separate so affinities, fragments, agglomeration thresholds, and labels can be reviewed between submissions.
+## Train on neuron annotations
 
-The example configs live in `connectio/segmentation/configs/stages/`. Native Funke keys remain unchanged. The optional `_connectio` object holds runner settings:
-
-```json
-{
-  "db_name": "sample_segmentation",
-  "_connectio": {
-    "run_dir": "../logs/stages",
-    "mongodb_dir": "../logs/stages/mongodb",
-    "mongod": "/path/to/mongod"
-  }
-}
-```
-
-A stage-local MongoDB process starts for over-segmentation, agglomeration, or LUT generation and stops when that job ends. Its database files persist in `mongodb_dir`; use the same directory and `db_name` for all three stages. A lock prevents concurrent access to the same database directory. Worker jobs receive the compute-node MongoDB address.
-
-Each stage writes `<run_dir>/<stage>/status.json` with `RUNNING`, `COMPLETED`, or `FAILED`. Affinity also saves resolved runtime configs. Use `--slurm-options` to change time, resources, account, or queue for the outer stage; the Funke `queue` config controls its block workers.
-
-## Models and training
-
-The default Spider pair targets 8×8×8 nm FIB-SEM:
+The Spider baseline was trained for 8 × 8 × 8 nm FIB-SEM. Its converted weights use `activate_upsampling=true` to preserve the source transposed-convolution activation.
 
 | Stage | Checkpoint | Iteration |
 |---|---|---:|
 | LSD | `lsd_spider_8x8x8nm_fibsem_v1_450000.pt` | 450000 |
 | ACRLSD | `acrlsd_spider_8x8x8nm_fibsem_v1_230000.pt` | 230000 |
 
-Authorized users can download pretrained bundles from the currently private [ConnectIO-LSD on Hugging Face](https://huggingface.co/happyhua1/ConnectIO-LSD). The Hub includes Spider, DigSpider and joint multi-dataset pairs. See [model downloads]({{ "/en/models/" | relative_url }}) for pinned downloads, checksums and matching configuration. The Spider weights are internal TensorFlow/MALA conversions; their configs set `activate_upsampling=true` to preserve the source transposed-convolution ReLU behavior. Hub filenames and hashes differ from the historical local manifest, so update checkpoint paths and use the downloaded manifest.
+Provide `volumes/raw`, integer neuron IDs in `volumes/labels/neuron_ids`, and a supervision mask in `volumes/labels/labels_mask`. To select other arrays, set `datasets` in the training config. Match voxel size, axes, units and physical ROI before sampling. The trainer and predictor scale `uint8` by 255 and `uint16` by 65535. Floating raw must be finite and in [0, 1]. Normalized input maps to [−1, 1].
 
-Training data requires `volumes/raw`, `volumes/labels/neuron_ids`, and `volumes/labels/labels_mask`. GPU training uses `connectio-lsd-train` or `connectio/segmentation/scripts/submit_training.sh`. LSD and ACRLSD configs must use the same architecture as their checkpoints.
+For affinity targets, the two endpoints form a positive edge when they share a nonzero neuron ID. Their masks establish where the edge can be supervised. Boundary zeros can supply valid negative examples. Inspect these targets when prediction looks uniformly connected. The [digspider experiment]({{ "/en/case-study/" | relative_url }}) shows the effect on fragments. Use `connectio-lsd-train` for training and [training recovery]({{ "/en/optimization/" | relative_url }}) to choose between initialization and resume.
 
-The corrected affinity supervision treats a target as positive only when both voxels belong to the same nonzero object, while validity is controlled independently by the two endpoint masks and neighbor availability. Boundary zeros remain valid negative examples. Production training also uses the required neighbor halo and cross-channel clipped balancing.
+## Export labels or switchable merge thresholds
 
-## Inference and post-processing
-
-Raw training and inference share dtype-aware normalization: `uint8` uses 255, `uint16` uses 65535, and floating raw must be finite and in `[0, 1]`; all become `[-1, 1]`. Inputs must remain unchanged while inference runs. Output arrays record their channel/spatial axes as well as physical metadata. Raw without axis metadata retains the historical XYZ convention; set `axes` in the inference JSON to declare another stored order. This declares axes and does not transpose pixels.
-
-Resume is bound to a SHA-256 checkpoint hash, scientific configuration, raw dataset, geometry, and (for ACRLSD) the upstream LSD dataset. Local input revisions are detected from metadata and chunk-file sizes, modification times, and change times; this is not a content hash of the whole volume. It requires local directory-backed Zarr and scans file metadata at startup. A copied or edited input can require a new output even when its pixels are equal. Completion records are scoped per output dataset, MongoDB records are mirrored locally, and a lock allows only one writer to that dataset. A changed signature, unsigned legacy output/state, or missing output with completed records is rejected: choose a **new output path**. Do not delete state files to force reuse. Existing legacy results remain available for review/export but cannot be automatically resumed with this version.
-
-Inference writes channel-first `uint8` predictions and copies raw `resolution` and `offset`. The signed local JSON block tracker permits restart with identical inputs when `mongo_required=false`. The affinity stage disables MongoDB for inference and runs LSD before ACRLSD.
-
-Watershed extracts fragments from the affinity convention produced by the corrected model. Agglomeration writes region-adjacency graph edges and merge scores. LUT generation scans thresholds. The final `segmentation` stage now supports two user-selected outputs through `output_type`:
-
-- `segmentation` (the backward-compatible default) materializes labels for one `threshold` and creates a WEBKNOSSOS Zarr3 dataset with `datasource-properties.json`.
-- `agglomerate` creates a WEBKNOSSOS Zarr v3 attachment for every requested threshold and a matching dense-ID base-fragments dataset. Use `thresholds`, or `thresholds_minmax` with `thresholds_step`, and set `agglomerate_file`, `out_file`, and `out_dataset`. The stage reuses the LUT files and the same persistent MongoDB RAG as the preceding stages.
-
-Each directory below `agglomerate_file` is one `AgglomerateViewArtifact`. The stage also creates `webknossos_dataset_path` (by default a sibling `webknossos_dataset` directory) with a dense-ID Zarr3 `segmentation/1` layer, its `segmentation/agglomerates/` attachments, and a root `datasource-properties.json`. Copy this complete dataset directory to WEBKNOSSOS. The Zarr2 volume at `out_file/out_dataset` remains an intermediate output; sparse original fragment IDs cannot index the mappings.
-
-WEBKNOSSOS can use WKW raw and Zarr3 segmentation layers in the same dataset. To add a Zarr2 raw layer instead, call `zarr2_to_zarr3` with `category="color"`; it supports selected source arrays, segmentation layers, and Slurm submission, and updates `datasource-properties.json` on completion.
-
-To add the output to an existing WKW raw dataset, copy its `segmentation/` subdirectory and append the generated segmentation entry to the existing `dataLayers`. Keep the existing raw entry, `scale`, and other metadata rather than replacing the whole datasource file. Both layers must share the same voxel size and coordinate frame.
-
-A dataset with only `segmentation/1` can ask you to zoom in when an agglomerate ID mapping is active. After publishing, run the separate `webknossos-downsample` stage to add segmentation magnifications 2, 4, 8, 16, and 32, matching the raw layer. See `07_webknossos_downsample.example.json`:
-
-```bash
-connectio-segmentation-stage webknossos-downsample \
-  connectio/segmentation/configs/stages/07_webknossos_downsample.example.json
-```
-
-The stage invokes the official WEBKNOSSOS `downsample` CLI for only the selected layer. Segmentation labels use its default mode filter. Connectio restores agglomerate attachment references after older CLI versions rewrite the metadata. `zarr2_to_zarr3` also accepts `downsample_coarsest_mag=32` to generate coarser mags after conversion. Run large datasets through Slurm and ensure the datastore runtime user can read the new magnification directories.
-
-Slurm outputs may be owner-only (directories `700`, files `600`). After placing a dataset in a self-hosted WEBKNOSSOS `binaryData/<organization>/<dataset>`, ensure the datastore's actual runtime user can traverse every directory and read `datasource-properties.json`, Zarr metadata, and chunks; a shared group on the host does not guarantee that the container user belongs to it. Otherwise the web UI may show “Not imported yet”. Use “Scan disk for new datasets” in the dataset dashboard, or allow up to about 10 minutes for automatic discovery.
-
-If “Not imported yet” persists after a scan, check from inside the datastore container that `datasource-properties.json` exists and is readable at the mounted dataset path, then inspect datastore import logs. This status alone does not establish a Zarr volume or agglomerate format error: in WEBKNOSSOS 26.05.0, the scanner emits it when it cannot see the datasource file, while JSON validation failures have a different error status.
+In the final stage config, use `output_type="segmentation"` for a label volume at one `threshold`. Use `output_type="agglomerate"` to compare several thresholds in WEBKNOSSOS. Supply `thresholds` or `thresholds_minmax` with `thresholds_step`, plus `agglomerate_file`, `out_file` and `out_dataset`. Keep the matching LUTs and graph. Each mapping refers to the dense base fragments generated with it.
 
 ```text
 webknossos_dataset/
@@ -88,40 +39,15 @@ webknossos_dataset/
         └── ...
 ```
 
-`affinities`, `fragments`, and raw must be spatially compared before proceeding—changing affinity polarity inside watershed is a diagnostic workaround, not a replacement for correct supervision.
+Copy the complete `webknossos_dataset_path` to the datastore. When adding the generated `segmentation/` to an existing raw dataset, append its entry to `dataLayers`. Keep the raw layer and the original scale. Check a landmark to confirm both layers share a coordinate frame.
 
-The legacy `00.submit_affinity.sh` and `01.submit_crop_postprocess.sh` remain for compatibility, but the latter chains downstream steps and is not the preferred review-gated interface.
+## View at coarser magnifications
 
-## Evaluation and viewing
-
-Evaluation keeps floating-point `resolution` and `offset`, so values such as `7.8125` nm and `0.5` nm are not truncated. Both label arrays must be 3-D, have the same spatial axis order and units, equal positive finite voxel sizes, and offsets on a shared voxel grid. It compares integer voxel indices with a grid-alignment tolerance of `1e-6` voxels. It does not resample or transpose inputs. The report includes the axes and units of the shared physical ROI. Legacy metadata without units is interpreted as nm.
-
-Declare axes using `axes` or `_ARRAY_DIMENSIONS`. If a legacy input has neither, explicitly supply its actual stored order:
+After editing the example to point to the published dataset and layer, run:
 
 ```bash
-connectio-lsd-evaluate GT.zarr volumes/labels/neuron_ids \
-  RESULT.zarr volumes/segmentation \
-  --gt-axes xyz --seg-axes xyz --output evaluation.json
+connectio-segmentation-stage webknossos-downsample \
+  connectio/segmentation/configs/stages/07_webknossos_downsample.example.json
 ```
 
-Use `zyx` instead when that is the actual order. Contradictory declarations are rejected; convert mismatched inputs before evaluation. Missing `resolution`, invalid geometry, differing units, or fractional-voxel shifts cause an error rather than a silently rounded score.
-
-Evaluation intersects ground truth and prediction in world coordinates using Zarr `offset` and `resolution`, then reports VOI, Rand, label counts, foreground voxels, and the largest-segment fraction:
-
-```bash
-connectio-lsd-evaluate \
-  GT.zarr volumes/labels/neuron_ids \
-  RESULT.zarr volumes/segmentation \
-  --output evaluation.json
-
-connectio-lsd-view RESULT.zarr volumes/raw volumes/segmentation
-```
-
-A lightweight CPU smoke test may use a reduced network to validate I/O and control flow. Production Spider smoke tests should run one real LSD block followed by one ACRLSD block on `GPUA800`, writing to a dedicated test Zarr rather than the source volume.
-
-See [code optimization and resource controls]({{ "/en/optimization/" | relative_url }}) for the 2026-10-04 training recovery, input/output identity, streaming resampling, evaluation memory and pipelined inference update.
-
-
-## Zarr2 / Zarr3 (26.10.28)
-
-Volume I/O supports both formats. New outputs remain Zarr2 by default; select `zarr_format=3`, `--zarr-format 3`, or a model config with `"zarr_format": 3` for new Zarr3 stores. See [format coverage, coordinates and validation]({{ "/en/zarr/" | relative_url }}).
+This adds label magnifications using the WEBKNOSSOS downsampler. Set the coarsest magnitude to match raw. If the datastore shows “Not imported yet”, check that its runtime account can traverse the mounted directory and read `datasource-properties.json`, metadata and chunks. Trigger a disk scan and inspect the datastore import log.

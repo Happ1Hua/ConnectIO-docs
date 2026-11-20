@@ -6,3 +6,5 @@ markdown: kramdown
 highlighter: rouge
 exclude:
   - README.md
+  - "**/*.orig"
+  - validation/gui-26.11.06.md
