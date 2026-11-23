@@ -59,3 +59,8 @@ Use the directory from the last step you actually ran. Phase correlation estimat
 | Skeleton annotations | `merge_nmls.py` |
 
 The [tutorial directory](https://github.com/Happ1Hua/ConnectIO/tree/main/tutorials) contains editable examples. Set your paths and resources before running them. For Zarr, HDF5, Precomputed or synapse overlays, select the corresponding `neuroglancer_view_*` script. Follow its tunnel instructions from your computer. For channel-first affinities, check each direction separately.
+
+## Design choice · When to apply CLAHE
+{: #design-choice}
+
+Run the pilot on a few normalized slices before committing the whole stack. Compare a dim membrane and a relatively uniform patch of tissue in the same fields of view. Keep the enhancement if it helps trace the membrane without turning background variation into apparent edges. If normalization alone gives enough contrast, pass the normalized slices directly to alignment.

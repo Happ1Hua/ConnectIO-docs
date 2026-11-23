@@ -5,23 +5,21 @@ lang: en
 permalink: /en/
 ---
 
-# ConnectIO user manual
+# ConnectIO documentation
 
-For a first cluster job, convert the four sample PNG slices to Zarr. This checks the browser connection, the Slurm submission and access to the output before you bring in a specimen or model. Follow *Try the four-slice example* in the [GUI workbench]({{ "/en/gui/" | relative_url }}). For a Linux workstation or a Python session, start with [install and convert a stack]({{ "/en/getting-started/" | relative_url }}).
+ConnectIO turns electron microscopy stacks into volumes you can inspect in Neuroglancer or WEBKNOSSOS. From an aligned volume you can segment neurons, label individual mitochondria or detect synaptic partners. Each model has its own inputs and can be run independently.
 
-## Start with the data you have
+## Getting started
 
-| Starting material | Where to go |
-| --- | --- |
-| A new TIFF stack | Check slice order and brightness before choosing normalization, CLAHE or registration. See [prepare a TIFF stack]({{ "/en/modules/" | relative_url }}). |
-| Aligned slices, HDF5 or Precomputed | Choose a converter, then check voxel size and origin against the source. See [format conversion and cropping]({{ "/en/formats/" | relative_url }}). |
-| A raw Zarr and model weights | Generate an inference config and check that the weights and voxel grid match. See [weights and inference configs]({{ "/en/models/" | relative_url }}). |
-| Neuron affinities or fragments | Pick up at the stage that consumes them. Later steps also need the merge graph. See [neuron segmentation stages]({{ "/en/pipeline/" | relative_url }}). |
+On a Linux workstation, [install and convert a stack in Python]({{ "/en/getting-started/" | relative_url }}). On a Slurm cluster, [submit the sample job from the GUI]({{ "/en/gui/" | relative_url }}). Both tutorials use four bundled PNG slices and produce the same 32 × 32 × 4 array.
 
-## Choose an output
+## Modules
 
-- **Neuron instances.** LSD and ACRLSD predict shape descriptors and affinities. Watershed and graph merging turn them into labels. See [from affinities to labels]({{ "/en/lsd-guide/" | relative_url }}).
-- **Mitochondrial instances.** Mito predicts foreground and contours on its model grid and restores the labels to the source grid. See [mitochondrial segmentation]({{ "/en/mito/" | relative_url }}).
-- **Synaptic partners.** Synful predicts postsynaptic sites and displacements to presynaptic partners. Export the pairs as CSV or WEBKNOSSOS skeletons for review. See [synapse detection]({{ "/en/synful/" | relative_url }}).
+| Module | Start here | Design choices |
+| --- | --- | --- |
+| Volume preparation | [Inspect and align a TIFF stack]({{ "/en/modules/" | relative_url }}), then [convert or crop the volume]({{ "/en/formats/" | relative_url }}). | [When to apply CLAHE]({{ "/en/modules/" | relative_url }}#design-choice) |
+| Neuron segmentation · LSD / ACRLSD | [Choose the stage that matches your input]({{ "/en/pipeline/" | relative_url }}). If you already have affinities, [start with fragments and merging]({{ "/en/lsd-guide/" | relative_url }}). | [Which merge products to keep]({{ "/en/pipeline/" | relative_url }}#design-choice) |
+| Mitochondrial segmentation · Mito | [Predict foreground and contours with the bundled checkpoint]({{ "/en/mito/" | relative_url }}). Use the restored instance labels for an overlay on the acquisition grid. | [Model grid or native grid]({{ "/en/mito/" | relative_url }}#design-choice) |
+| Synapse detection · Synful | [Predict postsynaptic sites and partner vectors]({{ "/en/synful/" | relative_url }}). Inspect a region before exporting paired endpoints. | [When to filter partners]({{ "/en/synful/" | relative_url }}#design-choice) |
 
-For an example of what to look for during review, the [digspider experiment]({{ "/en/case-study/" | relative_url }}) traces a registration failure near slice 461 and an affinity training run whose loss concealed a target error.
+For a worked experiment, [the digspider case study]({{ "/en/case-study/" | relative_url }}) follows a registration failure near slice 461 and shows how an affinity training error appeared in the final fragments.

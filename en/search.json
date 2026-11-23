@@ -1,0 +1,5 @@
+---
+layout: null
+search_language: en
+---
+{% include search-index.json %}

@@ -41,3 +41,8 @@ connectio-segmentation-stage over-segmentation configs/03_over_segmentation.json
 The first command prints the plan. The second submits the job. Check `<run_dir>/<stage>/status.json` and the job's `stderr.log`, then overlay the fragments on raw before you start agglomeration. Record the config, dataset path, checkpoint, job ID and a region you inspected. If you compare thresholds later, this identifies the graph and raw region behind each result.
 
 For worker setup, threshold selection and quantitative evaluation, continue with [from affinities to labels]({{ "/en/lsd-guide/" | relative_url }}). For a WEBKNOSSOS dataset or switchable agglomerate mappings, see [LSD training and label export]({{ "/en/segmentation/" | relative_url }}).
+
+## Design choice · Keep fragments when comparing thresholds
+{: #design-choice}
+
+The expensive prediction step is shared by every merge threshold. Once the affinities, fragments and scored graph are ready, you can build lookup tables for several thresholds and compare the labels on the same crop. Keep the fragments and their graph together. If you change the affinity checkpoint, regenerate the downstream products for that prediction.

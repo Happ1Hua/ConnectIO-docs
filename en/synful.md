@@ -91,3 +91,8 @@ Validation reports precision, recall, F1 and endpoint errors for the configured 
 | “CC exceeds extraction halo” | Increase `extraction.context_nm`; use a fresh extraction directory. |
 | NML “Off-grid/negative/nonfinite coordinate” | Check raw voxel size, physical origin, axis mapping, and candidate coordinates. |
 | NML appears rotated or displaced | Check `export.axis_order`, `export.origin_nm_xyz`, raw `resolution`/`offset`, and the WEBKNOSSOS dataset metadata together. |
+
+## Design choice · When to apply a neuron-label filter
+{: #design-choice}
+
+First export unfiltered pairs on a small region. Locate both endpoints on raw and check that their displacement follows the intended axes. Then compare the filtered and unfiltered lists. If a plausible pair disappears, inspect the neuron labels under both endpoints. A merge in the neuron segmentation can make two partners look like a single neuron.

@@ -96,3 +96,8 @@ connectio-mito convert \
   --output-checkpoint /path/to/new/spider_fibsem_mito_v1.pt --bundle mito-joint \
   --expected-sha256 34420077f8b2ce133ef3b477c7f77bf32c2b5071e4c74e321aa99912baf1b7d3
 ```
+
+## 设计选择 · 如何选择复核用的网格
+{: #design-choice}
+
+发现线粒体漏分时，先在模型网格上看前景与轮廓两个通道，再和分水岭结果比较，就能判断问题出现在哪一步。要对照原始切片里的具体结构，再打开还原到原网格的实例标签。最近邻还原可以保留实例 ID；即使还原后的 Z 间距更细，预测本身的细节仍由模型网格决定。

@@ -96,3 +96,8 @@ connectio-mito convert \
   --output-checkpoint /path/to/new/spider_fibsem_mito_v1.pt --bundle mito-joint \
   --expected-sha256 34420077f8b2ce133ef3b477c7f77bf32c2b5071e4c74e321aa99912baf1b7d3
 ```
+
+## Design choice · Choose the grid for review
+{: #design-choice}
+
+Use the model-grid probabilities to investigate a missed mitochondrion. The foreground and contour channels show whether it disappeared during prediction or was lost at watershed. To compare an instance with the original slices, open the restored native-grid labels. Nearest-neighbour restoration preserves instance IDs. The finer Z spacing in the restored array adds no information to the prediction.

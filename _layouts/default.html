@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page.title | escape }} · ConnectIO</title>
   <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+  {% if page.lang %}<script defer src="{{ '/assets/manual.js' | relative_url }}"></script>{% endif %}
 </head>
 <body>
   {% if page.lang == 'zh' %}
@@ -15,7 +16,12 @@
   <a href="#main" class="skip">{{ skip }}</a>
   <header class="masthead">
     <a class="brand" href="{% if page.lang %}{{ home | relative_url }}{% else %}{{ '/' | relative_url }}{% endif %}">ConnectIO</a>
-    {% if page.lang %}<a class="language" lang="{{ other }}" hreflang="{{ other }}" href="{{ page.url | replace_first: home, other_home | relative_url }}">{{ switch }}</a>{% endif %}
+    {% if page.lang %}
+    <div class="manual-search" hidden data-index="{{ home | append: 'search.json' | relative_url }}">
+      <input type="search" aria-label="{% if page.lang == 'zh' %}搜索中文手册{% else %}Search English manual{% endif %}" placeholder="{% if page.lang == 'zh' %}搜索中文手册{% else %}Search English manual{% endif %}" aria-controls="matches" autocomplete="off">
+      <div id="matches" hidden></div>
+    </div>
+    <a class="language" lang="{{ other }}" hreflang="{{ other }}" href="{{ page.url | replace_first: home, other_home | relative_url }}">{{ switch }}</a>{% endif %}
   </header>
   {% if page.lang %}
   {% capture chapters %}
@@ -37,6 +43,9 @@
       <details class="mobile-chapters"><summary>{{ contents }}</summary>{{ chapters }}</details>
     </nav>
     <main id="main">{{ content }}</main>
+    <aside class="outline" hidden>
+      <details open><summary>{% if page.lang == 'zh' %}本页目录{% else %}On this page{% endif %}</summary><ul></ul></details>
+    </aside>
   </div>
   {% else %}
   <main class="landing" id="main">{{ content }}</main>

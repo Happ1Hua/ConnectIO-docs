@@ -59,3 +59,8 @@ connectio-align --input clahe/tiffs --output aligned --method phase
 | Skeleton 标注 | `merge_nmls.py` |
 
 [教程目录](https://github.com/Happ1Hua/ConnectIO/tree/main/tutorials)里的脚本可复制修改。运行前换成自己的路径和作业资源。查看 Zarr、HDF5、Precomputed 或叠加突触标记时，选择对应的 `neuroglancer_view_*` 脚本，在自己电脑上按提示建立隧道。亲和图带通道维度，要逐方向查看。
+
+## 设计选择 · 是否需要 CLAHE
+{: #design-choice}
+
+先在少数归一化切片上试参数。对照同一视野里一段较暗的膜和一块灰度均匀的组织，看膜能否连续辨认，也看背景起伏是否被放大成了假边缘。如果归一化后已经看得清膜，就直接用这批切片做对齐。

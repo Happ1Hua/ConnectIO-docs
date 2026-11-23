@@ -41,3 +41,8 @@ connectio-segmentation-stage over-segmentation configs/03_over_segmentation.json
 第一条命令打印计划，第二条提交作业。检查 `<run_dir>/<stage>/status.json` 和作业的 `stderr.log`，将 fragments 叠到原图上，再决定是否开始合并。保留配置、数组路径、权重、作业号以及检查过的区域，方便之后比较不同阈值下的结果。
 
 worker 设置、阈值选择和量化评估见[从亲和图生成标签]({{ "/zh/lsd-guide/" | relative_url }})。向 WEBKNOSSOS 导出标签或多阈值合并映射见[LSD 训练与标签导出]({{ "/zh/segmentation/" | relative_url }})。
+
+## 设计选择 · 比较合并阈值时要留哪些数据
+{: #design-choice}
+
+多个阈值共用同一份预测。亲和图、片段和带合并分数的图生成后，可以为不同阈值建立查找表，在同一裁块上比较标签。为此需要同时保留片段和对应的图数据库。更换亲和图权重后，下游片段和合并关系也要按新预测重新生成。

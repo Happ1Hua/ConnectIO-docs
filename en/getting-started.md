@@ -11,9 +11,11 @@ This first conversion runs on a CPU and takes four small PNG files from the GUI 
 
 ## Install from the source checkout
 
-Use a Python environment on Linux. The GUI and its sample images are included on the [GUI branch of ConnectIO](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1). From the root of that checkout, run:
+Use a Python environment on Linux. The GUI and its sample images are included on the [GUI branch of ConnectIO](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1). For a fresh checkout, run the commands below. If you already have it, start at the install command.
 
 ```bash
+git clone --branch codex/connectio-gui-v1 https://github.com/Happ1Hua/ConnectIO.git
+cd ConnectIO
 python -m pip install -e .
 connectio-gui --help
 ```

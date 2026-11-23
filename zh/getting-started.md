@@ -11,9 +11,11 @@ permalink: /zh/getting-started/
 
 ## 安装
 
-在 Linux 的 Python 环境中，进入 ConnectIO 源码根目录。含 GUI 和示例切片的版本见 [ConnectIO GUI 分支](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1)。
+在 Linux 的 Python 环境中获取源码并安装。如果已有对应分支，从安装命令开始。含 GUI 和示例切片的版本见 [ConnectIO GUI 分支](https://github.com/Happ1Hua/ConnectIO/tree/codex/connectio-gui-v1)。
 
 ```bash
+git clone --branch codex/connectio-gui-v1 https://github.com/Happ1Hua/ConnectIO.git
+cd ConnectIO
 python -m pip install -e .
 connectio-gui --help
 ```

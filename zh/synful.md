@@ -91,3 +91,8 @@ connectio-synful validate --config my-synful.json \
 | “CC exceeds extraction halo” | 增大 `extraction.context_nm`，并改用新的提取目录。 |
 | NML “Off-grid/negative/nonfinite coordinate” | 核对 raw 体素大小、原点、轴映射及候选坐标。 |
 | NML 在查看器中旋转或偏移 | 同时核对 `export.axis_order`、`export.origin_nm_xyz`、raw 的 `resolution`/`offset` 和 WEBKNOSSOS 数据集元数据。 |
+
+## 设计选择 · 何时引入神经元标签过滤
+{: #design-choice}
+
+先在一个小区域导出未过滤的配对，把前后端分别叠回原图，核对位移方向与轴序。再用神经元标签过滤并对照两份候选表。如果一对看起来合理的端点被删掉，查看两端落在哪些神经元 ID 上。分割中的一次误合并，就可能让两个端点被当成属于同一个神经元。

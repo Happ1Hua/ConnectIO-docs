@@ -56,3 +56,36 @@ blockquote { margin-left: 0; border-left: 3px solid var(--rule); padding-left: 1
   summary { color: var(--link); cursor: pointer; }
   main { padding-top: 1.6rem; }
 }
+
+/* Keep the module tree and the current chapter's outline in view on wide screens. */
+.masthead { align-items: center; gap: 1rem; color: white; background: #304964; }
+.masthead a { color: inherit; }
+.masthead .brand { margin-right: auto; }
+.skip:focus { z-index: 5; }
+.manual-search { position: relative; width: min(23rem, 45%); }
+.manual-search input { width: 100%; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid #abbcca; border-radius: .25rem; }
+#matches { position: absolute; top: 100%; width: 100%; z-index: 3; padding: .45rem; background: white; color: var(--ink); box-shadow: 0 4px 14px #182b4229; max-height: 50vh; overflow-y: auto; }
+#matches a { display: block; padding: .45rem; color: var(--link); }
+.outline { min-width: 0; font-size: .9rem; color: var(--muted); }
+.outline summary { font-weight: 650; cursor: pointer; }
+.outline ul { list-style: none; padding-left: .75rem; border-left: 2px solid var(--rule); }
+.outline li { margin: .48rem 0; }
+.outline a { color: inherit; text-decoration: none; }
+.outline a:hover { text-decoration: underline; }
+@media (min-width: 70rem) {
+  .book { max-width: 84rem; grid-template-columns: 13rem minmax(0, 47rem) minmax(10rem, 14rem); gap: 2.4rem; }
+  .book > nav, .outline { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; align-self: start; }
+  .outline { padding-top: 3rem; }
+}
+@media (max-width: 69.99rem) {
+  .outline { grid-column: 2; grid-row: 1; padding-top: 1rem; }
+  .book > nav { grid-row: 1 / span 2; }
+  .book main { grid-column: 2; }
+  .book { row-gap: 0; }
+}
+@media (max-width: 52rem) {
+  .book { display: flex; flex-direction: column; }
+  .outline { order: 1; }
+  .book main { order: 2; }
+  .masthead { gap: .6rem; }
+}
